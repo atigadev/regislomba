@@ -129,7 +129,8 @@ $progresUpload = filter_var(ini_get('session.upload_progress.enabled'), FILTER_V
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
-                            <tr><th>Kode</th><th>Nama</th><th>Lomba</th><th>Status</th></tr>
+                            <!-- Di HP kolom Kode disembunyikan; kodenya ditulis di bawah nama. -->
+                            <tr><th class="d-none d-sm-table-cell">Kode</th><th>Nama</th><th>Lomba</th><th>Status</th></tr>
                         </thead>
                         <tbody>
                             <?php if (!$terbaru): ?>
@@ -137,10 +138,16 @@ $progresUpload = filter_var(ini_get('session.upload_progress.enabled'), FILTER_V
                             <?php endif; ?>
                             <?php foreach ($terbaru as $p): ?>
                                 <tr>
-                                    <td><code><?= h($p['kode']) ?></code></td>
-                                    <td><strong><?= h($p['nama']) ?></strong><br><small class="text-muted"><?= h(tgl_indo($p['dibuat_pada'])) ?></small></td>
-                                    <td><span class="badge badge-<?= h($p['jenis_lomba']) ?>"><?= h(jenis_label($p['jenis_lomba'])) ?></span></td>
-                                    <td><span class="badge badge-<?= h($p['status']) ?>"><?= $p['status'] === 'hadir' ? 'Hadir' : 'Terdaftar' ?></span></td>
+                                    <td class="d-none d-sm-table-cell"><code><?= h($p['kode']) ?></code></td>
+                                    <td>
+                                        <strong><?= h($p['nama']) ?></strong>
+                                        <small class="d-block text-muted">
+                                            <code class="d-sm-none"><?= h($p['kode']) ?></code>
+                                            <span class="text-nowrap"><?= h(tgl_indo($p['dibuat_pada'])) ?></span>
+                                        </small>
+                                    </td>
+                                    <td><span class="badge badge-<?= h($p['jenis_lomba']) ?> text-nowrap"><?= h(jenis_label($p['jenis_lomba'])) ?></span></td>
+                                    <td><span class="badge badge-<?= h($p['status']) ?>"><?= $p['status'] === 'hadir' ? 'Hadir' : 'Belum hadir' ?></span></td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>

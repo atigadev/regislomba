@@ -67,33 +67,41 @@ require dirname(__DIR__) . '/includes/header.php';
                 <thead>
                     <tr>
                         <th>Nama</th>
-                        <th>Jam</th>
+                        <!-- Di HP kolom Jam disembunyikan; jamnya ditulis di bawah nama. -->
+                        <th class="d-none d-sm-table-cell">Jam</th>
                         <th>Status</th>
-                        <th class="text-end">Peserta Hadir</th>
-                        <th class="text-end" style="width:160px;"></th>
+                        <th class="text-end">Hadir</th>
+                        <th class="text-end"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!$rows): ?>
                         <tr><td colspan="5" class="text-center text-muted">Belum ada sesi. Tekan Tambah Sesi untuk membuat yang pertama.</td></tr>
                     <?php endif; ?>
-                    <?php foreach ($rows as $s): ?>
+                    <?php foreach ($rows as $s):
+                        $jam = substr($s['jam_mulai'], 0, 5) . '–' . substr($s['jam_selesai'], 0, 5);
+                    ?>
                         <tr>
-                            <td><strong><?= h($s['nama']) ?></strong></td>
-                            <td><?= h(substr($s['jam_mulai'], 0, 5)) ?> – <?= h(substr($s['jam_selesai'], 0, 5)) ?></td>
+                            <td>
+                                <strong><?= h($s['nama']) ?></strong>
+                                <small class="d-block d-sm-none text-muted text-nowrap"><?= h($jam) ?></small>
+                            </td>
+                            <td class="d-none d-sm-table-cell text-nowrap"><?= h($jam) ?></td>
                             <td><span class="badge <?= $s['aktif'] ? 'badge-hadir' : 'badge-terdaftar' ?>"><?= $s['aktif'] ? 'Aktif' : 'Nonaktif' ?></span></td>
                             <td class="text-end"><?= (int) $s['dipakai'] ?></td>
                             <td class="text-end">
-                                <button type="button" class="btn btn-sm btn-default tombol-ubah"
-                                    data-sesi='<?= h(json_encode(['id' => (int) $s['id'], 'nama' => $s['nama'], 'mulai' => substr($s['jam_mulai'], 0, 5), 'selesai' => substr($s['jam_selesai'], 0, 5), 'aktif' => (int) $s['aktif']])) ?>'>Ubah</button>
-                                <?php if (!(int) $s['dipakai']): ?>
-                                    <form method="post" class="d-inline" onsubmit="return confirm('Hapus sesi <?= h(addslashes($s['nama'])) ?>?');">
-                                        <?= csrf_field() ?>
-                                        <input type="hidden" name="aksi" value="hapus">
-                                        <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Hapus sesi" aria-label="Hapus sesi"><i class="fas fa-trash"></i></button>
-                                    </form>
-                                <?php endif; ?>
+                                <div class="aksi-baris">
+                                    <button type="button" class="btn btn-sm btn-default tombol-ubah"
+                                        data-sesi='<?= h(json_encode(['id' => (int) $s['id'], 'nama' => $s['nama'], 'mulai' => substr($s['jam_mulai'], 0, 5), 'selesai' => substr($s['jam_selesai'], 0, 5), 'aktif' => (int) $s['aktif']])) ?>'>Ubah</button>
+                                    <?php if (!(int) $s['dipakai']): ?>
+                                        <form method="post" onsubmit="return confirm('Hapus sesi <?= h(addslashes($s['nama'])) ?>?');">
+                                            <?= csrf_field() ?>
+                                            <input type="hidden" name="aksi" value="hapus">
+                                            <input type="hidden" name="id" value="<?= (int) $s['id'] ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger" title="Hapus sesi" aria-label="Hapus sesi"><i class="fas fa-trash"></i></button>
+                                        </form>
+                                    <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>

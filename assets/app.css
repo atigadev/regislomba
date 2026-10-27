@@ -157,6 +157,20 @@ html.dark .alert-warning { background: #2d2312; border: 1px solid #6b4e1c; color
 .badge-terdaftar { background: rgba(224,164,75,.18); color: var(--ui-warning); }
 .badge { font-weight: 600; padding: .4em .7em; }
 
+/* ---- Tombol teks di pojok kartu ----
+   Porto memberi SEMUA tautan di .card-actions ukuran ikon 24x24px; tombol
+   berteks ("Lihat semua") jadi tercetak satu huruf per baris. Hanya .btn yang
+   dikembalikan ke ukuran wajarnya - ikon kartu bawaan Porto tidak tersentuh. */
+.card-actions a.btn,
+.card-actions button.btn { width: auto; height: auto; line-height: 1.5; white-space: nowrap; }
+
+/* Kode registrasi tidak dipenggal di tengah ("LMB-" / "00003"). */
+.table code { white-space: nowrap; }
+
+/* ---- Tombol aksi di baris tabel: selalu berjajar, tidak bertumpuk ---- */
+.aksi-baris { display: inline-flex; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; align-items: center; }
+.aksi-baris form { margin: 0; }
+
 /* ---- Kotak angka (dashboard & laporan) ---- */
 .kotak-angka { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .kotak-angka .kotak { background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 8px; padding: 16px 18px; }
@@ -241,9 +255,31 @@ html.dark .login-card .card-body { background: var(--ui-panel); color: var(--ui-
     .porto-brand { font-size: 13px; max-width: 52vw; }
     .porto-brand i { font-size: 17px; }
 
-    .header .header-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 52px; padding: 0 10px; }
-    .header .logo-container { height: 52px; }
-    .header-right #userbox { float: none; flex: 0 0 auto; }
+    /* ---- Header satu baris ----
+       Porto menyematkan baris logo (60px, fixed) lalu menaruh header-right
+       sebagai BARIS KEDUA berisi avatar saja - dua bilah memakan ±120px layar
+       HP. Avatar dipindah ke dalam bilah logo: [logo ...... (A) (☰)].
+       Tinggi tetap 60px karena sidebar seluler Porto memakai padding-top 60px. */
+    .header .logo-container { display: flex; align-items: center; padding-right: 110px; }
+    /* Porto menjadikan logo inline-block ber-line-height 57px di layar sempit,
+       sehingga teksnya naik dari garis tengah avatar; dikembalikan ke flex. */
+    .header .logo-container .logo { display: flex; align-items: center; height: 60px; line-height: normal; margin: 0 0 0 15px; min-width: 0; }
+    .header .header-right {
+        position: fixed; top: 0; right: 56px; z-index: 100;
+        display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+        width: auto; height: 60px; margin-top: 0; padding: 0;
+        background: transparent !important;
+    }
+    .header-right #userbox { float: none; flex: 0 0 auto; margin: 0; }
+    /* Garis pemisah 1px x 63px milik Porto untuk header dua baris; di satu
+       baris ia jatuh tepat di samping tombol menu. */
+    .userbox:after { display: none; }
+    .header .toggle-sidebar-left {
+        top: 15px; width: 32px; height: 32px; line-height: 32px;
+        background: var(--ui-raised); color: var(--ui-text);
+    }
+    /* Bilah header kini fixed seluruhnya: isi halaman dimulai di bawahnya. */
+    .inner-wrapper { padding-top: 60px; }
     #userbox > a { display: flex; align-items: center; min-height: 38px; padding: 0; }
     #userbox .profile-picture { display: block; margin: 0; }
     #userbox .avatar-circle { width: 32px; height: 32px; font-size: 13px; }
