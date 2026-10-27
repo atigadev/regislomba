@@ -1,0 +1,286 @@
+/* =========================================================
+   Registrasi Lomba di atas tema Porto Admin (mode gelap)
+   ---------------------------------------------------------
+   Mengikuti STANDAR-UI SatuRegis: kelas Porto/Bootstrap dulu, warna lewat
+   token --ui-*, dan mode gelap mendefinisikan ulang token yang sama.
+   Dimuat SESUDAH Bootstrap & Porto.
+   ========================================================= */
+
+:root {
+    --ui-primary: #2563eb;
+    --ui-success: #16a34a;
+    --ui-danger: #dc2626;
+    --ui-warning: #d97706;
+    --ui-info: #0891b2;
+
+    --ui-bg: #f4f5f7;
+    --ui-panel: #ffffff;
+    --ui-input: #ffffff;
+    --ui-raised: #eef0f4;
+    --ui-line: #e3e6ec;
+    --ui-text: #1f2430;
+    --ui-muted: #6b7280;
+}
+
+html.dark {
+    --ui-primary: #5c6bc0;
+    --ui-success: #6fd18f;
+    --ui-danger: #ea868f;
+    --ui-warning: #e0a44b;
+    --ui-info: #8fb3ee;
+
+    --ui-bg: #1b1e28;
+    --ui-panel: #242834;
+    --ui-input: #1f2330;
+    --ui-raised: #2b3040;
+    --ui-line: #333846;
+    --ui-text: #d7dae2;
+    --ui-muted: #8b93a5;
+    color-scheme: dark;
+}
+
+html.dark body {
+    font-family: 'Poppins', 'Segoe UI', Tahoma, Arial, sans-serif;
+    font-size: 13.5px;
+}
+
+/* ============================================================
+   KERANGKA PORTO
+   ============================================================ */
+.header .logo { display: flex; align-items: center; height: 40px; }
+.porto-brand {
+    display: inline-flex; align-items: center; gap: 9px;
+    font-weight: 700; font-size: 15px; line-height: 1; color: #fff;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    max-width: min(46vw, 320px);
+}
+.porto-brand i { color: var(--ui-primary); font-size: 19px; flex-shrink: 0; }
+.userbox .profile-picture .avatar-circle {
+    width: 35px; height: 35px; border-radius: 50%;
+    background: var(--ui-primary); color: #fff;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 15px; line-height: 1;
+}
+.userbox .profile-info { max-width: 190px; }
+.userbox .name, .userbox .role { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.25; }
+.userbox .name { font-size: 13px; font-weight: 600; }
+.userbox .role { font-size: 11px; }
+.header-right .tombol-formulir { float: left; margin: 13px 6px 0 0; align-items: center; }
+
+html.dark body,
+html.dark .inner-wrapper,
+html.dark section.body,
+html.dark .content-body { background: var(--ui-bg); color: var(--ui-text); }
+
+html.dark .sidebar-left,
+html.dark .sidebar-left .nano-content,
+html.dark .sidebar-left .sidebar-header { background: var(--ui-panel); }
+html.dark .sidebar-left .sidebar-header .sidebar-title { color: var(--ui-muted); }
+html.dark .sidebar-left .sidebar-header .sidebar-toggle { background: transparent; }
+html.dark .sidebar-left .sidebar-header .sidebar-toggle i { color: var(--ui-muted); }
+html.dark .nav-main .nav-link { color: var(--ui-text); }
+html.dark .nav-main .nav-link i { color: var(--ui-muted); }
+html.dark .nav-main .nav-link:hover { background: rgba(255,255,255,.05); color: #fff; text-decoration: none; }
+html.dark .nav-main li.nav-active > a { background: rgba(92,107,192,.18); color: #fff; box-shadow: inset 3px 0 0 var(--ui-primary); }
+html.dark .nav-main li.nav-active > a i { color: var(--ui-primary); }
+
+html.dark .header { background: var(--ui-panel); border-top-color: var(--ui-panel); border-bottom: 1px solid var(--ui-line); }
+html.dark .header .logo-container,
+html.dark .header .header-right { background: var(--ui-panel); }
+html.dark .page-header { background: var(--ui-bg); border-left-color: var(--ui-bg); z-index: 1001; }
+html.dark .page-header h2 { color: var(--ui-text); border-bottom-color: var(--ui-primary); }
+html.dark .breadcrumbs li,
+html.dark .breadcrumbs li a,
+html.dark .breadcrumbs li span { color: var(--ui-muted); }
+html.dark .profile-info .name { color: var(--ui-text); }
+html.dark .profile-info .role { color: var(--ui-muted); }
+html.dark .text-muted { color: var(--ui-muted) !important; }
+html.dark hr { border-color: var(--ui-line); }
+
+/* ============================================================
+   KOMPONEN
+   ============================================================ */
+html.dark .content-body .card,
+html.dark .modal-content { background: var(--ui-panel); border-color: var(--ui-line); color: var(--ui-text); }
+html.dark .content-body .card-header,
+html.dark .content-body .card-footer,
+html.dark .modal-header,
+html.dark .modal-footer { background: var(--ui-panel); border-color: var(--ui-line); }
+html.dark .content-body .card-body { background: var(--ui-panel); }
+html.dark .content-body .card-title,
+html.dark .modal-title,
+html.dark .content-body label { color: var(--ui-text); }
+html.dark .content-body .card-subtitle { color: var(--ui-muted); }
+html.dark .btn-close { filter: invert(1) grayscale(1) brightness(1.6); }
+
+/* Garis otomatis Porto di antara .form-group yang berurutan dimatikan sekali di sini. */
+.content-body .form-group + .form-group,
+.modal .form-group + .form-group { border-top: 0; padding-top: 0; }
+.content-body .form-group, .modal .form-group { margin-bottom: 14px; }
+.help-block { display: block; font-size: 12px; color: var(--ui-muted); margin-top: 4px; }
+.wajib { color: var(--ui-danger); }
+
+html.dark .form-control,
+html.dark .form-select {
+    background-color: var(--ui-input);
+    border: 1px solid var(--ui-line);
+    color: var(--ui-text);
+}
+html.dark .form-control:focus,
+html.dark .form-select:focus {
+    background-color: var(--ui-input);
+    border-color: var(--ui-primary);
+    box-shadow: 0 0 0 .2rem rgba(92,107,192,.2);
+    color: #fff;
+}
+html.dark .form-control::placeholder { color: #6a7182; }
+html.dark .input-group-text { background: var(--ui-raised); border-color: var(--ui-line); color: var(--ui-muted); }
+
+html.dark .btn-default { background: var(--ui-raised); border-color: var(--ui-line); color: var(--ui-text); }
+html.dark .btn-default:hover,
+html.dark .btn-default:focus { background: #343a4d; border-color: var(--ui-line); color: #fff; }
+
+html.dark .table { --bs-table-bg: transparent; --bs-table-color: var(--ui-text); --bs-table-hover-color: #fff; --bs-table-hover-bg: rgba(255,255,255,.035); color: var(--ui-text); border-color: var(--ui-line); }
+html.dark .table > :not(caption) > * > * { border-bottom-color: var(--ui-line); }
+html.dark .table thead th { color: var(--ui-muted); font-weight: 600; }
+html.dark .table tfoot th, html.dark .table tfoot td { color: var(--ui-text); font-weight: 700; border-top: 2px solid var(--ui-line); }
+.table td, .table th { vertical-align: middle; }
+
+html.dark .alert-success { background: #15271c; border: 1px solid #1f5130; color: var(--ui-success); }
+html.dark .alert-danger  { background: #2c1618; border: 1px solid #842029; color: var(--ui-danger); }
+html.dark .alert-info    { background: #172033; border: 1px solid #2c4a7a; color: var(--ui-info); }
+html.dark .alert-warning { background: #2d2312; border: 1px solid #6b4e1c; color: var(--ui-warning); }
+
+.badge-challenge { background: rgba(92,107,192,.22); color: #aab3ea; }
+.badge-free_play { background: rgba(8,145,178,.2); color: #7dd3e6; }
+.badge-hadir { background: rgba(22,163,74,.2); color: var(--ui-success); }
+.badge-terdaftar { background: rgba(224,164,75,.18); color: var(--ui-warning); }
+.badge { font-weight: 600; padding: .4em .7em; }
+
+/* ---- Kotak angka (dashboard & laporan) ---- */
+.kotak-angka { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
+.kotak-angka .kotak { background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 8px; padding: 16px 18px; }
+.kotak-angka .label { font-size: 12px; color: var(--ui-muted); text-transform: uppercase; letter-spacing: .04em; }
+.kotak-angka .nilai { font-size: 28px; font-weight: 700; line-height: 1.2; color: var(--ui-text); }
+.kotak-angka .sub { font-size: 12px; color: var(--ui-muted); }
+.kotak-angka .kotak.aksen { border-left: 3px solid var(--ui-primary); }
+.kotak-angka .kotak.ok { border-left: 3px solid var(--ui-success); }
+.kotak-angka .kotak.waspada { border-left: 3px solid var(--ui-warning); }
+
+/* ---- Baris filter ---- */
+.baris-filter { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.baris-filter .form-group { margin: 0 !important; min-width: 150px; flex: 1 1 150px; }
+.baris-filter .tombol { display: flex; gap: 8px; flex: 0 0 auto; }
+
+/* ---- Cari cepat di halaman Cek Pendaftaran ---- */
+.cari-cepat { font-size: 16px; padding: 10px 14px; height: auto; }
+
+/* ---- QR: pemindai kamera & poster formulir ---- */
+.pembaca-qr { width: 100%; min-height: 240px; background: #000; border-radius: 8px; overflow: hidden; }
+.pembaca-qr video { width: 100% !important; display: block; }
+/* QR selalu gelap di atas putih, juga di mode gelap - pemindai butuh kontras itu. */
+.poster-kotak-qr { display: inline-block; padding: 12px; background: #fff; border-radius: 10px; line-height: 0; margin: 8px 0 12px; }
+.poster-kotak-qr canvas { width: 300px; max-width: 100%; height: auto; }
+.poster-judul { font-size: 22px; font-weight: 700; margin: 0 0 4px; color: var(--ui-text); }
+.poster-ajak { font-size: 15px; color: var(--ui-muted); margin: 6px 0 0; }
+.poster-ajak strong { color: var(--ui-text); }
+.poster-tautan { font-size: 12px; color: var(--ui-muted); word-break: break-all; margin: 0; }
+
+/* ---- DataTables 3 ---- */
+html.dark div.dt-container,
+html.dark div.dt-container .dt-info,
+html.dark div.dt-container .dt-length,
+html.dark div.dt-container .dt-search { color: var(--ui-muted); }
+html.dark div.dt-container .dt-search input,
+html.dark div.dt-container .dt-length select {
+    background: var(--ui-input); border: 1px solid var(--ui-line); color: var(--ui-text);
+    border-radius: 4px; padding: 4px 8px; width: auto; display: inline-block;
+}
+html.dark div.dt-container .dt-search input { min-width: 200px; margin-left: 6px; }
+html.dark div.dt-container .dt-paging .dt-paging-button { color: var(--ui-text) !important; border-radius: 4px; }
+html.dark div.dt-container .dt-paging .dt-paging-button:hover { background: var(--ui-raised) !important; border-color: var(--ui-line) !important; color: #fff !important; }
+html.dark div.dt-container .dt-paging .dt-paging-button.current,
+html.dark div.dt-container .dt-paging .dt-paging-button.current:hover { background: var(--ui-primary) !important; border-color: var(--ui-primary) !important; color: #fff !important; }
+html.dark div.dt-container .dt-paging .dt-paging-button.disabled,
+html.dark div.dt-container .dt-paging .dt-paging-button.disabled:hover { color: #5b6172 !important; background: transparent !important; border-color: transparent !important; }
+html.dark table.dataTable { color: var(--ui-text); }
+html.dark table.dataTable thead > tr > th { border-bottom-color: var(--ui-line); color: var(--ui-muted); }
+html.dark table.dataTable > tbody > tr > * { border-top-color: var(--ui-line); }
+html.dark table.dataTable.hover > tbody > tr:hover > *,
+html.dark table.dataTable.table-hover > tbody > tr:hover > * { box-shadow: inset 0 0 0 9999px rgba(255,255,255,.035) !important; }
+.dt-layout-row.dt-layout-table > .dt-layout-cell { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ============================================================
+   HALAMAN LOGIN
+   ============================================================ */
+body.login-page { background: var(--ui-bg); min-height: 100vh; }
+.login-wrap { min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; }
+.login-card { width: 100%; max-width: 390px; margin: 0; }
+html.dark .login-card .card-body { background: var(--ui-panel); color: var(--ui-text); }
+.login-brand { display: flex; align-items: center; justify-content: center; gap: 9px; font-weight: 700; font-size: 14px; color: var(--ui-muted); margin-bottom: 6px; }
+.login-brand i { color: var(--ui-primary); font-size: 20px; }
+.login-title { font-size: 20px; font-weight: 700; text-align: center; margin: 0 0 20px; color: var(--ui-text); }
+.login-page .form-label { font-size: 13px; font-weight: 600; color: var(--ui-muted); margin-bottom: 5px; }
+
+/* ============================================================
+   LAYAR SEMPIT (sama dengan porto-shell.css SatuRegis)
+   ============================================================ */
+@media (max-width: 991px) {
+    .btn, .btn-sm { min-height: 38px; }
+}
+
+@media (max-width: 767px) {
+    .userbox .profile-info { display: none; }
+    .porto-brand { font-size: 13px; max-width: 52vw; }
+    .porto-brand i { font-size: 17px; }
+
+    .header .header-right { display: flex; align-items: center; justify-content: flex-end; gap: 8px; height: 52px; padding: 0 10px; }
+    .header .logo-container { height: 52px; }
+    .header-right #userbox { float: none; flex: 0 0 auto; }
+    #userbox > a { display: flex; align-items: center; min-height: 38px; padding: 0; }
+    #userbox .profile-picture { display: block; margin: 0; }
+    #userbox .avatar-circle { width: 32px; height: 32px; font-size: 13px; }
+    #userbox .custom-caret { display: none; }
+    #userbox .dropdown-menu { left: auto !important; right: -6px !important; width: auto; min-width: 200px; max-width: calc(100vw - 20px); }
+    #userbox .dropdown-menu a { white-space: nowrap; }
+
+    .content-body { padding: 24px 14px; }
+    .content-body > .page-header { margin: -24px -14px 24px; }
+
+    .kotak-angka { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    .kotak-angka .nilai { font-size: 22px; }
+    .baris-filter .form-group { flex: 1 1 100%; }
+    .baris-filter .tombol { width: 100%; }
+    .baris-filter .tombol .btn { flex: 1; }
+    html.dark div.dt-container .dt-search input { min-width: 0; width: 100%; margin: 6px 0 0; }
+}
+
+@media (max-width: 575px) {
+    .page-header h2 { font-size: 16px; }
+    .content-body { padding: 20px 10px; }
+    .content-body > .page-header { margin: -20px -10px 20px; }
+}
+
+/* ============================================================
+   CETAK LAPORAN
+   ============================================================ */
+@media print {
+    html.dark, html.dark body, html.dark .content-body { background: #fff !important; color: #000 !important; }
+    .header, .sidebar-left, .page-header, .no-print, .dt-layout-row:not(.dt-layout-table) { display: none !important; }
+    html.fixed .inner-wrapper, .content-body { padding: 0 !important; margin: 0 !important; }
+    html.fixed .content-body { margin-left: 0 !important; }
+    html.dark .content-body .card, html.dark .content-body .card-body, html.dark .content-body .card-header { background: #fff !important; border-color: #ccc !important; color: #000 !important; }
+    html.dark .content-body .card-title, html.dark .table, html.dark .table thead th, html.dark .kotak-angka .nilai { color: #000 !important; }
+    html.dark .table > :not(caption) > * > * { border-bottom-color: #ccc !important; }
+    .kotak-angka .kotak { background: #fff !important; border-color: #ccc !important; }
+    .badge { color: #000 !important; background: none !important; border: 1px solid #999; }
+    .judul-cetak { display: block !important; }
+    /* Poster QR: hanya kartunya yang tercetak, memenuhi halaman. */
+    .poster-qr { border: 0 !important; }
+    .poster-qr .poster-judul { font-size: 34px; color: #000 !important; }
+    .poster-qr .poster-ajak { font-size: 20px; color: #333 !important; }
+    .poster-qr .poster-ajak strong { color: #000 !important; }
+    .poster-qr .poster-kotak-qr canvas { width: 420px; }
+    .row > [class*="col-"]:has(.poster-qr) { flex: 0 0 100%; max-width: 100%; }
+}
+.judul-cetak { display: none; }

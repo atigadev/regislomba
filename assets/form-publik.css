@@ -1,0 +1,242 @@
+/* =========================================================
+   Formulir publik SatuRegis
+   ---------------------------------------------------------
+   Dipakai halaman yang dibuka PESERTA tanpa login - saat ini Formulir
+   Peserta Langsung (app/daftar-app). Sengaja berdiri sendiri, tidak memuat
+   tema Porto: yang membukanya orang di HP, sering di jaringan acara yang
+   padat, dan satu formulir tidak perlu seluruh tema admin.
+
+   Ditaruh di assets/ bersama, bukan di dalam folder aplikasinya, dengan
+   alasan yang sama dengan app-switcher.css: halaman publik berikutnya akan
+   memakainya juga, dan yang disalin ke dua tempat pasti berbeda cepat atau
+   lambat.
+
+   Sepupunya app/redeem-app/assets/redeem.css, yang lahir lebih dulu dan
+   masih berdiri sendiri. Keduanya layak disatukan saat aplikasinya digabung.
+   ========================================================= */
+
+:root {
+    --fp-bg: #141720;
+    --fp-kartu: #1e222d;
+    --fp-garis: #2c3242;
+    --fp-teks: #e8eaf0;
+    --fp-redup: #99a1b3;
+    --fp-aksen: #5c6bc0;
+    --fp-ok: #22c55e;
+    --fp-galat: #ef4444;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 24px 16px 48px;
+    background: var(--fp-bg);
+    color: var(--fp-teks);
+    font-family: 'Poppins', system-ui, -apple-system, Segoe UI, sans-serif;
+    font-size: 15px;
+    line-height: 1.6;
+    /* Dibaca di luar ruangan dengan layar silau; pemulusan font yang terlalu
+       tipis membuat label kecil hilang di bawah matahari. */
+    -webkit-font-smoothing: antialiased;
+}
+
+.fp-bungkus {
+    max-width: 520px;
+    margin: 0 auto;
+}
+
+.fp-kartu {
+    background: var(--fp-kartu);
+    border: 1px solid var(--fp-garis);
+    border-radius: 14px;
+    padding: 24px 22px 28px;
+}
+
+
+.fp-banner {
+    display: block;
+    width: calc(100% + 44px);
+    margin: -22px -22px 20px;
+    height: auto;
+    aspect-ratio: 660 / 255;
+    object-fit: cover;
+    border-radius: 12px 12px 0 0;
+    background: #14161f;
+}
+
+/* ---------------- kepala ---------------- */
+.fp-kepala {
+    text-align: center;
+    margin-bottom: 22px;
+}
+
+.fp-logo {
+    max-width: 150px;
+    max-height: 80px;
+    width: auto;
+    height: auto;
+    margin: 0 auto 12px;
+    display: block;
+}
+
+.fp-kepala h1 {
+    margin: 0 0 4px;
+    font-size: 19px;
+    font-weight: 600;
+    line-height: 1.35;
+}
+
+.fp-sub {
+    margin: 0;
+    font-size: 13px;
+    color: var(--fp-redup);
+}
+
+/* ---------------- isian ---------------- */
+.fp-grup {
+    margin-bottom: 16px;
+}
+
+.fp-grup label {
+    display: block;
+    margin-bottom: 6px;
+    font-size: 13.5px;
+    font-weight: 500;
+}
+
+.fp-wajib {
+    color: var(--fp-galat);
+}
+
+.fp-grup input,
+.fp-grup select,
+.fp-grup textarea {
+    width: 100%;
+    padding: 11px 13px;
+    background: #171a23;
+    border: 1px solid var(--fp-garis);
+    border-radius: 9px;
+    color: var(--fp-teks);
+    font-family: inherit;
+    /* 16px, bukan lebih kecil: Safari iOS MEMPERBESAR seluruh halaman begitu
+       isian berfont di bawah 16px mendapat fokus, dan pembesarannya tidak
+       pernah kembali sendiri - formulirnya jadi terpotong di tengah
+       pengisian. */
+    font-size: 16px;
+}
+
+.fp-grup textarea {
+    resize: vertical;
+    min-height: 84px;
+}
+
+.fp-grup input:focus,
+.fp-grup select:focus,
+.fp-grup textarea:focus {
+    outline: none;
+    border-color: var(--fp-aksen);
+    box-shadow: 0 0 0 3px rgba(92, 107, 192, .25);
+}
+
+.fp-grup input[type=file] {
+    padding: 9px 11px;
+    font-size: 14px;
+}
+
+.fp-bantu {
+    margin: 6px 0 0;
+    font-size: 12px;
+    color: var(--fp-redup);
+    line-height: 1.5;
+}
+
+.fp-catatan {
+    text-align: center;
+    margin-top: 14px;
+}
+
+/* ---------------- tombol ---------------- */
+.fp-tombol {
+    width: 100%;
+    margin-top: 6px;
+    padding: 14px 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--fp-aksen);
+    color: #fff;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.fp-tombol:hover {
+    background: #4e5bb0;
+}
+
+.fp-tombol:active {
+    transform: translateY(1px);
+}
+
+/* ---------------- pesan ---------------- */
+.fp-alert {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    border-radius: 9px;
+    background: rgba(92, 107, 192, .15);
+    border: 1px solid rgba(92, 107, 192, .45);
+    font-size: 13.5px;
+}
+
+.fp-alert.galat {
+    background: rgba(239, 68, 68, .13);
+    border-color: rgba(239, 68, 68, .5);
+    color: #fca5a5;
+}
+
+/* ---------------- sukses & layar penuh ---------------- */
+.fp-sukses,
+.fp-pesan-besar {
+    text-align: center;
+    padding: 36px 24px 34px;
+}
+
+.fp-sukses h1,
+.fp-pesan-besar h1 {
+    margin: 0 0 10px;
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.fp-sukses p,
+.fp-pesan-besar p {
+    margin: 0;
+    color: var(--fp-redup);
+    font-size: 14px;
+}
+
+.fp-ceklis {
+    width: 62px;
+    height: 62px;
+    margin: 0 auto 16px;
+    border-radius: 50%;
+    background: rgba(34, 197, 94, .15);
+    border: 2px solid var(--fp-ok);
+    color: var(--fp-ok);
+    font-size: 30px;
+    line-height: 58px;
+}
+
+@media (max-width: 420px) {
+    body {
+        padding: 14px 10px 36px;
+    }
+
+    .fp-kartu {
+        padding: 20px 16px 24px;
+        border-radius: 12px;
+    }
+}

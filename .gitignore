@@ -1,0 +1,10 @@
+# Kredensial database - ditulis setup.php, tidak boleh masuk riwayat git
+config.php
+# Penanda setup selesai (per server)
+includes/setup.lock
+# Backup .sql berisi data pribadi peserta
+backup-*.sql
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
