@@ -136,25 +136,28 @@ require dirname(__DIR__) . '/includes/header.php';
         </p>
     </header>
     <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0" id="tabelPeserta">
+        <!-- Susunan mengikuti LEBAR KARTU ini (container query di app.css), bukan lebar
+             layar - sidebar yang terbuka/ciut mengubah ruang yang tersedia:
+               lebar  : semua kolom
+               sedang : Kode & Daftar pindah ke bawah nama
+               sempit : tiap baris jadi kartu, No. WA ikut pindah ke bawah nama
+             Seluruh data tetap tampil di modal konfirmasi Hadir. -->
+        <div class="table-responsive wadah-tabel">
+            <table class="table table-hover mb-0 tabel-kartu" id="tabelPeserta">
                 <thead>
                     <tr>
-                        <th>Kode</th>
+                        <th class="kol-sedang">Kode</th>
                         <th>Nama</th>
-                        <th class="text-end">Umur</th>
-                        <th>No. WA</th>
-                        <th>Email</th>
-                        <th>Domisili</th>
+                        <th class="kol-sempit">No. WA</th>
                         <th>Lomba</th>
-                        <th>Daftar</th>
+                        <th class="kol-sedang">Daftar</th>
                         <th>Status</th>
-                        <th class="text-end" style="width:190px;"></th>
+                        <th class="text-end"></th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php if (!$rows): ?>
-                        <tr><td colspan="10" class="text-center text-muted">
+                        <tr><td colspan="7" class="text-center text-muted">
                             <?= $fCari !== '' ? 'Tidak ada yang cocok dengan "' . h($fCari) . '". Periksa ejaan, atau pilih Status "Semua status" untuk mencari juga yang sudah hadir.' : 'Tidak ada pendaftar pada saringan ini.' ?>
                         </td></tr>
                     <?php endif; ?>
@@ -166,38 +169,46 @@ require dirname(__DIR__) . '/includes/header.php';
                         ];
                     ?>
                         <tr data-id="<?= (int) $p['id'] ?>">
-                            <td><code><?= h($p['kode']) ?></code></td>
-                            <td><strong><?= h($p['nama']) ?></strong></td>
-                            <td class="text-end"><?= (int) $p['umur'] ?></td>
-                            <td><a href="https://wa.me/<?= h($p['no_wa']) ?>" target="_blank" rel="noopener"><?= h(format_wa($p['no_wa'])) ?></a></td>
-                            <td><?= h($p['email']) ?></td>
-                            <td><?= h($p['domisili']) ?></td>
-                            <td><span class="badge badge-<?= h($p['jenis_lomba']) ?>"><?= h(jenis_label($p['jenis_lomba'])) ?></span></td>
-                            <td><small><?= h(tgl_indo($p['dibuat_pada'])) ?></small></td>
+                            <td class="kol-sedang"><code><?= h($p['kode']) ?></code></td>
+                            <td class="kol-utama">
+                                <strong><?= h($p['nama']) ?></strong>
+                                <small class="d-block text-muted">
+                                    <code class="meta-sedang"><?= h($p['kode']) ?> ·</code>
+                                    <?= (int) $p['umur'] ?> th · <?= h($p['domisili']) ?>
+                                    <span class="meta-sempit"> · <a href="https://wa.me/<?= h($p['no_wa']) ?>" target="_blank" rel="noopener" class="text-nowrap"><?= h(format_wa($p['no_wa'])) ?></a></span>
+                                    <span class="d-block text-break"><?= h($p['email']) ?></span>
+                                    <span class="d-block text-nowrap meta-sedang">Daftar <?= h(tgl_indo($p['dibuat_pada'])) ?></span>
+                                </small>
+                            </td>
+                            <td class="kol-sempit text-nowrap"><a href="https://wa.me/<?= h($p['no_wa']) ?>" target="_blank" rel="noopener"><?= h(format_wa($p['no_wa'])) ?></a></td>
+                            <td><span class="badge badge-<?= h($p['jenis_lomba']) ?> text-nowrap"><?= h(jenis_label($p['jenis_lomba'])) ?></span></td>
+                            <td class="kol-sedang"><small class="text-nowrap"><?= h(tgl_indo($p['dibuat_pada'])) ?></small></td>
                             <td class="sel-status">
                                 <?php if ($p['status'] === 'hadir'): ?>
                                     <span class="badge badge-hadir">Hadir</span>
-                                    <br><small class="text-muted"><?= h(tgl_indo($p['hadir_pada'])) ?> · <?= h($p['sesi_nama'] ?: 'Tanpa sesi') ?> · <?= h($p['petugas_nama'] ?: '-') ?></small>
+                                    <small class="d-block text-muted"><span class="text-nowrap"><?= h(tgl_indo($p['hadir_pada'])) ?></span> · <span class="text-nowrap"><?= h($p['sesi_nama'] ?: 'Tanpa sesi') ?></span> · <span class="text-nowrap"><?= h($p['petugas_nama'] ?: '-') ?></span></small>
                                 <?php else: ?>
-                                    <span class="badge badge-terdaftar">Belum hadir</span>
+                                    <span class="badge badge-terdaftar text-nowrap">Belum hadir</span>
                                 <?php endif; ?>
                             </td>
                             <td class="text-end sel-aksi">
-                                <a href="<?= h(url_kartu($p['token'])) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-default" title="Buka kartu QR peserta" aria-label="Buka kartu QR peserta"><i class="fas fa-qrcode"></i></a>
-                                <?php if ($p['status'] === 'terdaftar'): ?>
-                                    <button type="button" class="btn btn-sm btn-success tombol-hadir" data-peserta='<?= h(json_encode($data)) ?>'>
-                                        <i class="fas fa-check"></i> Hadir
-                                    </button>
-                                    <?php if (is_admin()): ?>
-                                        <button type="button" class="btn btn-sm btn-danger tombol-hapus" data-id="<?= (int) $p['id'] ?>" data-nama="<?= h($p['nama']) ?>" title="Hapus pendaftaran" aria-label="Hapus pendaftaran">
-                                            <i class="fas fa-trash"></i>
+                                <div class="aksi-baris">
+                                    <a href="<?= h(url_kartu($p['token'])) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-default" title="Buka kartu QR peserta" aria-label="Buka kartu QR peserta"><i class="fas fa-qrcode"></i></a>
+                                    <?php if ($p['status'] === 'terdaftar'): ?>
+                                        <button type="button" class="btn btn-sm btn-success tombol-hadir text-nowrap" data-peserta='<?= h(json_encode($data)) ?>'>
+                                            <i class="fas fa-check"></i> Hadir
+                                        </button>
+                                        <?php if (is_admin()): ?>
+                                            <button type="button" class="btn btn-sm btn-danger tombol-hapus" data-id="<?= (int) $p['id'] ?>" data-nama="<?= h($p['nama']) ?>" title="Hapus pendaftaran" aria-label="Hapus pendaftaran">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    <?php elseif (is_admin()): ?>
+                                        <button type="button" class="btn btn-sm btn-default tombol-batal text-nowrap" data-id="<?= (int) $p['id'] ?>" data-nama="<?= h($p['nama']) ?>">
+                                            <i class="fas fa-rotate-left"></i> Batal hadir
                                         </button>
                                     <?php endif; ?>
-                                <?php elseif (is_admin()): ?>
-                                    <button type="button" class="btn btn-sm btn-default tombol-batal" data-id="<?= (int) $p['id'] ?>" data-nama="<?= h($p['nama']) ?>">
-                                        <i class="fas fa-rotate-left"></i> Batal hadir
-                                    </button>
-                                <?php endif; ?>
+                                </div>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -503,8 +514,8 @@ ob_start();
                 return;
             }
             var tr = baris(pesertaAktif.id);
-            tr.querySelector('.sel-status').innerHTML = '<span class="badge badge-hadir">Hadir</span><br><small class="text-muted">' + esc(res.keterangan) + '</small>';
-            tr.querySelector('.sel-aksi').innerHTML = '<span class="text-success"><i class="fas fa-circle-check"></i> Tercatat</span>';
+            tr.querySelector('.sel-status').innerHTML = '<span class="badge badge-hadir">Hadir</span><small class="d-block text-muted">' + esc(res.keterangan) + '</small>';
+            tr.querySelector('.sel-aksi').innerHTML = '<span class="text-success text-nowrap"><i class="fas fa-circle-check"></i> Tercatat</span>';
             modal.hide();
             var cari = document.querySelector('.dt-search input');
             if (cari) { cari.select(); }

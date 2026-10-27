@@ -171,6 +171,45 @@ html.dark .alert-warning { background: #2d2312; border: 1px solid #6b4e1c; color
 .aksi-baris { display: inline-flex; flex-wrap: nowrap; gap: 6px; justify-content: flex-end; align-items: center; }
 .aksi-baris form { margin: 0; }
 
+/* ---- Tabel yang menyesuaikan LEBAR KARTUNYA (Cek Pendaftaran) ----
+   Container query, bukan media query: sidebar 300px yang terbuka atau ciut
+   mengubah ruang tabel tanpa mengubah lebar layar. Browser lama tanpa
+   dukungan tetap mendapat tabel penuh yang bisa digeser (.table-responsive).
+     >= 900px : semua kolom
+     680-899  : Kode & Daftar pindah ke bawah nama (.kol-sedang / .meta-sedang)
+     < 680px  : tiap baris jadi kartu; No. WA ikut pindah (.kol-sempit / .meta-sempit) */
+.wadah-tabel { container-type: inline-size; }
+.meta-sedang, .meta-sempit { display: none !important; }
+
+@container (max-width: 899px) {
+    .kol-sedang { display: none !important; }
+    .meta-sedang { display: inline !important; }
+    span.meta-sedang.d-block { display: block !important; }
+}
+
+@container (max-width: 679px) {
+    .kol-sempit { display: none !important; }
+    .meta-sempit { display: inline !important; }
+
+    .tabel-kartu thead { display: none; }
+    .tabel-kartu tbody tr {
+        display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+        padding: 12px 2px; border-bottom: 1px solid var(--ui-line);
+    }
+    .tabel-kartu tbody tr > td { display: block; padding: 0; border: 0; }
+    .tabel-kartu tbody tr > td[colspan] { flex: 1 1 100%; padding: 8px 0; }
+    .tabel-kartu .kol-utama { flex: 1 1 100%; }
+    .tabel-kartu .sel-status { flex: 1 1 auto; }
+    .tabel-kartu .sel-aksi { flex: 1 1 100%; }
+    .tabel-kartu .sel-aksi .aksi-baris { display: flex; }
+}
+
+/* ---- Tombol di pojok kartu tidak menimpa judul ----
+   Porto menaruh .card-actions position:absolute; judul & keterangan panjang
+   jadi tertimpa tombolnya ("Scan QR" di atas teks). Dijadikan float kanan,
+   sehingga teks mengalir di sampingnya. */
+.card-header .card-actions { position: static; float: right; margin: 0 0 8px 12px; }
+
 /* ---- Kotak angka (dashboard & laporan) ---- */
 .kotak-angka { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 14px; margin-bottom: 20px; }
 .kotak-angka .kotak { background: var(--ui-panel); border: 1px solid var(--ui-line); border-radius: 8px; padding: 16px 18px; }
