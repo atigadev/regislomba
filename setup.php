@@ -11,6 +11,7 @@
  * belum benar dan koneksinya pasti gagal.
  */
 require_once __DIR__ . '/includes/schema.php';
+require_once __DIR__ . '/includes/aturan.php';
 
 $fileConfig = __DIR__ . '/config.php';
 $fileKunci = __DIR__ . '/includes/setup.lock';
@@ -96,7 +97,7 @@ if (!$terkunci && $_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($v['acara_nama'] === '' || $v['app_nama'] === '') { $galat[] = 'Nama aplikasi dan nama acara wajib diisi.'; }
     if (!preg_match('/^[A-Za-z0-9-]{0,10}$/', $v['kode_awalan'])) { $galat[] = 'Awalan kode maksimal 10 karakter (huruf, angka, strip).'; }
     if ($v['admin_nama'] === '' || !preg_match('/^[a-zA-Z0-9._-]{3,50}$/', $v['admin_user'])) { $galat[] = 'Nama admin wajib diisi; username 3–50 karakter (huruf, angka, titik, garis bawah, strip).'; }
-    if (strlen($v['admin_pass']) < 6) { $galat[] = 'Password administrator minimal 6 karakter.'; }
+    if (password_lemah($v['admin_pass'])) { $galat[] = 'Password administrator minimal 8 karakter dan bukan password umum (admin123, password, dst.).'; }
     if ($v['admin_pass'] !== ($_POST['admin_pass2'] ?? '')) { $galat[] = 'Ulangi password administrator dengan isi yang sama.'; }
 
     if (!$galat) {
@@ -148,7 +149,7 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Setup - Registrasi Lomba</title>
-<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800&display=swap" rel="stylesheet" type="text/css">
 <link rel="stylesheet" href="<?= e($base) ?>/assets/porto/vendor/bootstrap/css/bootstrap.css">
 <link rel="stylesheet" href="<?= e($base) ?>/assets/porto/vendor/font-awesome/css/all.min.css">
 <link rel="stylesheet" href="<?= e($base) ?>/assets/porto/css/theme.css">
@@ -247,11 +248,11 @@ $base = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
             </div>
             <div class="col-sm-6 form-group mb-3">
               <label class="form-label" for="admin_pass">Password</label>
-              <input class="form-control" id="admin_pass" name="admin_pass" type="password" minlength="6" required autocomplete="new-password">
+              <input class="form-control" id="admin_pass" name="admin_pass" type="password" minlength="8" required autocomplete="new-password">
             </div>
             <div class="col-sm-6 form-group mb-3">
               <label class="form-label" for="admin_pass2">Ulangi Password</label>
-              <input class="form-control" id="admin_pass2" name="admin_pass2" type="password" minlength="6" required autocomplete="new-password">
+              <input class="form-control" id="admin_pass2" name="admin_pass2" type="password" minlength="8" required autocomplete="new-password">
             </div>
           </div>
 

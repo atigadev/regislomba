@@ -10,15 +10,28 @@ if (!is_file(dirname(__DIR__) . '/config.php')) {
     exit;
 }
 require_once dirname(__DIR__) . '/config.php';
+require_once __DIR__ . '/aturan.php';
 
 date_default_timezone_set(APP_TIMEZONE);
 ini_set('display_errors', APP_DEBUG ? '1' : '0');
 
+function koneksi_https()
+{
+    return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
+}
+
 if (session_status() === PHP_SESSION_NONE) {
+    // Strict mode: ID sesi buatan penyerang yang belum pernah diterbitkan server ditolak.
+    ini_set('session.use_strict_mode', '1');
+    ini_set('session.use_only_cookies', '1');
     session_name('REGIS_ACARA');
-    session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'path' => BASE_URL . '/']);
+    session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax', 'secure' => koneksi_https(), 'path' => BASE_URL . '/']);
     session_start();
 }
+
+// Naikkan bila schema_migrasi() mendapat langkah baru.
+const SKEMA_VERSI = 2;
 
 const JENIS_LOMBA = [
     'challenge' => 'Challenge',
@@ -42,6 +55,15 @@ function db()
             );
             // Jam MySQL disamakan dengan jam PHP supaya NOW() dan date() tidak berselisih.
             $pdo->exec("SET time_zone = '" . date('P') . "'");
+
+            // Perubahan skema sesudah setup (tabel pembatas, kolom token) dipasang
+            // sekali; penandanya berkas di includes/ yang tidak ikut git.
+            $penanda = __DIR__ . '/.skema-' . SKEMA_VERSI;
+            if (!is_file($penanda)) {
+                require_once __DIR__ . '/schema.php';
+                schema_migrasi($pdo);
+                @file_put_contents($penanda, date('c'));
+            }
         } catch (PDOException $e) {
             http_response_code(503);
             exit('Database belum siap. Jalankan setup.php untuk memasang database, atau periksa kredensial di config.php.'
@@ -54,6 +76,68 @@ function db()
 function h($s)
 {
     return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
+}
+
+/**
+ * Nilai PHP -> literal JavaScript yang aman ditaruh di dalam <script>.
+ * JSON_HEX_TAG mengubah < dan > jadi </>, sehingga isian peserta
+ * seperti "<!--<script>" tidak bisa mengubah cara browser membaca blok script.
+ */
+function js($v)
+{
+    return json_encode($v, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE);
+}
+
+/**
+ * Sel CSV yang aman dibuka di Excel/Sheets: isian yang diawali = + - @ (atau
+ * tab/CR) dianggap rumus oleh spreadsheet - nama "=HYPERLINK(...)" akan
+ * menjadi tautan aktif di komputer panitia. Diberi petik di depan supaya
+ * terbaca sebagai teks.
+ */
+function csv_aman($v)
+{
+    $v = (string) $v;
+    return ($v !== '' && strpos("=+-@\t\r", $v[0]) !== false) ? "'" . $v : $v;
+}
+
+function ip_klien()
+{
+    // Sengaja HANYA REMOTE_ADDR: X-Forwarded-For bisa diisi sembarang oleh pengirim.
+    return substr((string) ($_SERVER['REMOTE_ADDR'] ?? '0.0.0.0'), 0, 45);
+}
+
+/**
+ * Pembatas percobaan berbasis database (bukan sesi - sesi bisa dibuang
+ * penyerang dengan menghapus cookie). Mengembalikan true bila $kunci sudah
+ * mencapai $batas kejadian dalam $detik terakhir.
+ */
+function pembatas_penuh($kunci, $batas, $detik)
+{
+    $st = db()->prepare('SELECT COUNT(*) FROM pembatas WHERE kunci = ? AND waktu > (NOW() - INTERVAL ? SECOND)');
+    $st->execute([$kunci, (int) $detik]);
+    return (int) $st->fetchColumn() >= $batas;
+}
+
+function pembatas_catat($kunci)
+{
+    db()->prepare('INSERT INTO pembatas (kunci, waktu) VALUES (?, NOW())')->execute([$kunci]);
+    // Bersih-bersih sesekali supaya tabelnya tidak membengkak.
+    if (mt_rand(1, 50) === 1) {
+        db()->exec('DELETE FROM pembatas WHERE waktu < (NOW() - INTERVAL 1 DAY)');
+    }
+}
+
+function pembatas_hapus($kunci)
+{
+    db()->prepare('DELETE FROM pembatas WHERE kunci = ?')->execute([$kunci]);
+}
+
+/** Versi PHP yang masih rentan PHP2Shell (CVE-2026-109618/109619). */
+function php_rentan_php2shell()
+{
+    $aman = ['8.2' => '8.2.35', '8.3' => '8.3.36', '8.4' => '8.4.27', '8.5' => '8.5.12'];
+    $cabang = PHP_MAJOR_VERSION . '.' . PHP_MINOR_VERSION;
+    return !isset($aman[$cabang]) || version_compare(PHP_VERSION, $aman[$cabang], '<');
 }
 
 function url($path = '')
@@ -74,10 +158,8 @@ function asset($path)
  */
 function url_penuh($path = '')
 {
-    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-        || strtolower($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https';
     $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
-    return ($https ? 'https' : 'http') . '://' . $host . url($path);
+    return (koneksi_https() ? 'https' : 'http') . '://' . $host . url($path);
 }
 
 function token_baru()
@@ -249,7 +331,12 @@ function is_admin()
 function wajib_login($hanyaAdmin = false)
 {
     $p = petugas_login();
+    // Sesi yang menganggur lebih dari 8 jam (lebih panjang dari satu hari acara) berakhir.
+    if ($p && time() - (int) ($_SESSION['aktif_terakhir'] ?? 0) > 8 * 3600) {
+        $p = null;
+    }
     if ($p) {
+        $_SESSION['aktif_terakhir'] = time();
         $st = db()->prepare('SELECT id, nama, username, peran FROM petugas WHERE id = ? AND aktif = 1');
         $st->execute([$p['id']]);
         $p = $st->fetch() ?: null;
@@ -261,6 +348,13 @@ function wajib_login($hanyaAdmin = false)
             json_keluar(['ok' => false, 'pesan' => 'Sesi berakhir. Muat ulang halaman lalu login kembali.'], 401);
         }
         redirect('admin/login.php?kembali=' . rawurlencode($_SERVER['REQUEST_URI'] ?? ''));
+    }
+    // Akun dengan password lemah/bawaan hanya boleh membuka halaman Ganti Password.
+    if (!empty($_SESSION['wajib_ganti_password']) && basename($_SERVER['SCRIPT_NAME'] ?? '') !== 'password.php') {
+        if (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])) {
+            json_keluar(['ok' => false, 'pesan' => 'Ganti password Anda dulu di menu Ganti Password.'], 403);
+        }
+        redirect('admin/password.php');
     }
     if ($hanyaAdmin && $p['peran'] !== 'admin') {
         http_response_code(403);

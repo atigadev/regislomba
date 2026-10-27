@@ -34,7 +34,7 @@ $baru = isset($_GET['baru']);
     <meta name="theme-color" content="#1b1e28">
     <meta name="robots" content="noindex, nofollow">
     <title><?= $p ? 'Kartu ' . h($p['kode']) : 'Kartu tidak ditemukan' ?> - <?= h(ACARA_NAMA) ?></title>
-    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('assets/form-publik.css') ?>">
     <link rel="stylesheet" href="<?= asset('assets/form-lomba.css') ?>">
 </head>
@@ -93,12 +93,12 @@ $baru = isset($_GET['baru']);
         <script src="<?= asset('assets/vendor/qrcode.min.js') ?>"></script>
         <script>
         (function () {
-            var isiQr = <?= json_encode(url_cek($p['token'])) ?>;
-            var tautanKartu = <?= json_encode(url_kartu($p['token'], true)) ?>;
-            var kode = <?= json_encode($p['kode']) ?>;
-            var nama = <?= json_encode($p['nama']) ?>;
-            var lomba = <?= json_encode(jenis_label($p['jenis_lomba'])) ?>;
-            var acara = <?= json_encode(ACARA_NAMA) ?>;
+            var isiQr = <?= js(url_cek($p['token'])) ?>;
+            var tautanKartu = <?= js(url_kartu($p['token'], true)) ?>;
+            var kode = <?= js($p['kode']) ?>;
+            var nama = <?= js($p['nama']) ?>;
+            var lomba = <?= js(jenis_label($p['jenis_lomba'])) ?>;
+            var acara = <?= js(ACARA_NAMA) ?>;
 
             // margin 2 + koreksi galat M: tetap terbaca dari layar HP yang retak atau silau.
             QRCode.toCanvas(document.getElementById('qrPeserta'), isiQr, { width: 220, margin: 2, errorCorrectionLevel: 'M' });

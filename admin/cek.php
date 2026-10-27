@@ -106,12 +106,18 @@ require dirname(__DIR__) . '/includes/header.php';
                             <div class="form-group mb-0">
                                 <label for="pilihSesi">Sesi <span class="wajib">*</span></label>
                                 <select id="pilihSesi" name="sesi_id" class="form-select" required>
-                                    <?php if (!$sesiAktif): ?><option value="">Belum ada sesi aktif</option><?php endif; ?>
+                                    <!-- Pilihan kosong terpilih bila tidak ada sesi yang berjalan: tanpa
+                                         itu browser diam-diam menunjuk sesi pertama. -->
+                                    <option value="" <?= $sesiKini ? '' : 'selected' ?>><?= $sesiAktif ? '— Pilih sesi —' : 'Belum ada sesi aktif' ?></option>
                                     <?php foreach ($sesiAktif as $s): ?>
                                         <option value="<?= (int) $s['id'] ?>" <?= $sesiKini && (int) $sesiKini['id'] === (int) $s['id'] ? 'selected' : '' ?>><?= h(sesi_label($s)) ?></option>
                                     <?php endforeach; ?>
                                 </select>
-                                <span class="help-block">Dipilih otomatis sesuai jam sekarang. Periksa data di atas sebelum menandai hadir.</span>
+                                <?php if ($sesiKini): ?>
+                                    <span class="help-block">Dipilih otomatis sesuai jam sekarang. Periksa data di atas sebelum menandai hadir.</span>
+                                <?php else: ?>
+                                    <span class="help-block text-warning"><i class="fas fa-triangle-exclamation"></i> Sekarang (<?= date('H:i') ?>) di luar jam sesi mana pun — pilih sesinya secara manual.</span>
+                                <?php endif; ?>
                             </div>
                         </div>
                         <footer class="card-footer">

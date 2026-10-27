@@ -36,7 +36,7 @@ $menu = [
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title><?= h($pageTitle) ?> - <?= h(APP_NAME) ?></title>
-<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800&display=swap" rel="stylesheet" type="text/css">
 <link rel="stylesheet" href="<?= url('assets/porto/vendor/bootstrap/css/bootstrap.css') ?>">
 <link rel="stylesheet" href="<?= url('assets/porto/vendor/font-awesome/css/all.min.css') ?>">
 <link rel="stylesheet" href="<?= url('assets/porto/css/theme.css') ?>">
@@ -83,7 +83,7 @@ $menu = [
                         <li class="divider"></li>
                         <li><a role="menuitem" tabindex="-1" href="<?= url('index.php') ?>" target="_blank" rel="noopener"><i class="fas fa-up-right-from-square"></i> Formulir Peserta</a></li>
                         <li><a role="menuitem" tabindex="-1" href="<?= url('admin/password.php') ?>"><i class="fas fa-key"></i> Ganti Password</a></li>
-                        <li><a role="menuitem" tabindex="-1" href="<?= url('admin/logout.php') ?>"><i class="fas fa-power-off"></i> Logout</a></li>
+                        <li><a role="menuitem" tabindex="-1" href="<?= url('admin/logout.php') ?>" data-logout><i class="fas fa-power-off"></i> Logout</a></li>
                     </ul>
                 </div>
             </div>
@@ -112,7 +112,7 @@ $menu = [
                                 </li>
                             <?php endforeach; ?>
                             <li>
-                                <a class="nav-link" href="<?= url('admin/logout.php') ?>">
+                                <a class="nav-link" href="<?= url('admin/logout.php') ?>" data-logout>
                                     <i class="fas fa-power-off" aria-hidden="true"></i>
                                     <span>Logout</span>
                                 </a>

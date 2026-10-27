@@ -24,6 +24,21 @@ Untuk import manual, pakai `database.sql` (akun awal `admin` / `admin123`, seger
 
 `config.php` **tidak dilacak git** karena berisi kredensial. Contohnya ada di `config.contoh.php`.
 
+## Keamanan
+
+- **PHP2Shell (CVE-2026-109618 / 109619)**: celah di runtime PHP, bukan di aplikasi. Perbaikan tuntas hanya
+  dengan PHP **8.2.35 / 8.3.36 / 8.4.27 / 8.5.12** atau lebih baru (PHP 7.4–8.1 tidak mendapat rilis perbaikan).
+  Sampai server diperbarui, `.htaccess` aplikasi ini menolak multipart/upload, kiriman chunked, badan > 64 KB, dan
+  metode selain GET/POST/HEAD sebelum sampai ke PHP, serta menyetel `session.upload_progress.enabled=Off` dan
+  `memory_limit=-1` untuk folder ini. Matikan juga `session.upload_progress.enabled` di `php.ini` server, karena
+  aplikasi lain di server yang sama tetap bisa menjadi pintu masuk. Dashboard admin menampilkan peringatan bila
+  versi PHP masih rentan.
+- Login dibatasi per IP+username (5x/15 menit) dan per IP (20x/15 menit), disimpan di database.
+- Formulir publik: jebakan bot, minimal 3 detik pengisian, dan batas per IP (`DAFTAR_BATAS_IP`, bawaan 150 per
+  10 menit — naikkan di `config.php` bila ratusan peserta mendaftar lewat satu WiFi acara).
+- Password petugas minimal 8 karakter dan bukan password umum; akun dengan password lemah dipaksa ganti saat login.
+- Wajib HTTPS di hosting: cookie sesi otomatis diberi flag `Secure`.
+
 ## Catatan
 
 - Isi QR mengikuti alamat yang sedang dibuka. Buka aplikasi lewat IP/domain yang bisa dijangkau HP, bukan `localhost`.

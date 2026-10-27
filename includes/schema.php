@@ -47,6 +47,14 @@ function schema_tabel()
             CONSTRAINT fk_peserta_sesi FOREIGN KEY (sesi_id) REFERENCES sesi(id) ON DELETE SET NULL,
             CONSTRAINT fk_peserta_petugas FOREIGN KEY (hadir_oleh) REFERENCES petugas(id) ON DELETE SET NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
+
+        // Satu baris per kejadian (login gagal, kiriman formulir); dihitung per jendela waktu.
+        'pembatas' => "CREATE TABLE IF NOT EXISTS pembatas (
+            id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+            kunci VARCHAR(120) NOT NULL,
+            waktu DATETIME NOT NULL,
+            INDEX idx_kunci_waktu (kunci, waktu)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci",
     ];
 }
 
@@ -60,6 +68,8 @@ function schema_migrasi(PDO $pdo)
     if (!$pdo->query("SHOW COLUMNS FROM peserta LIKE 'token'")->fetch()) {
         $pdo->exec('ALTER TABLE peserta ADD COLUMN token CHAR(32) NULL UNIQUE AFTER kode');
     }
+    // Pembatas percobaan login & kiriman formulir (per IP), versi 2.
+    $pdo->exec(schema_tabel()['pembatas']);
     $st = $pdo->prepare('UPDATE peserta SET token = ? WHERE id = ?');
     foreach ($pdo->query('SELECT id FROM peserta WHERE token IS NULL')->fetchAll(PDO::FETCH_COLUMN) as $id) {
         $st->execute([bin2hex(random_bytes(16)), $id]);
@@ -86,7 +96,8 @@ function schema_ekspor(PDO $pdo, $out, $namaDb)
     fwrite($out, "-- Import: buat/pilih database, lalu jalankan berkas ini (phpMyAdmin > Import).\n\n");
     fwrite($out, "SET NAMES utf8mb4;\nSET FOREIGN_KEY_CHECKS = 0;\n\n");
 
-    foreach (array_keys(schema_tabel()) as $tabel) {
+    // Tabel pembatas hanya catatan sementara (login gagal, kiriman), tidak perlu di-backup.
+    foreach (array_diff(array_keys(schema_tabel()), ['pembatas']) as $tabel) {
         $buat = $pdo->query("SHOW CREATE TABLE `{$tabel}`")->fetch(PDO::FETCH_NUM);
         fwrite($out, "DROP TABLE IF EXISTS `{$tabel}`;\n" . $buat[1] . ";\n\n");
 

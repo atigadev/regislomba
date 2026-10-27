@@ -1,4 +1,79 @@
 Options -Indexes
-<FilesMatch "\.(sql|lock|md)$">
+
+# ---------------------------------------------------------------
+# Berkas & folder yang tidak boleh diunduh
+# ---------------------------------------------------------------
+<FilesMatch "\.(sql|lock|md|bak|log|ini|sh)$">
     Require all denied
 </FilesMatch>
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Folder/berkas berawalan titik (.git, .env, .htaccess, .vscode) -> 404.
+    # 404, bukan 403: tidak mengonfirmasi bahwa foldernya ada.
+    RewriteRule (^|/)\.(?!well-known/) - [R=404,L]
+
+    # -----------------------------------------------------------
+    # Mitigasi PHP2Shell (CVE-2026-109618 / CVE-2026-109619)
+    # -----------------------------------------------------------
+    # Celahnya di runtime PHP dan terpicu SEBELUM kode aplikasi berjalan,
+    # lewat badan POST: multipart/form-data, upload, kiriman tanpa
+    # Content-Length (chunked), dan isian bersarang dalam. Aplikasi ini
+    # tidak pernah mengunggah berkas - semua form & fetch mengirim
+    # application/x-www-form-urlencoded - jadi bentuk-bentuk itu ditolak
+    # Apache di sini dan tidak pernah sampai ke PHP.
+    RewriteCond %{HTTP:Content-Type} multipart/ [NC]
+    RewriteRule ^ - [F,L]
+
+    RewriteCond %{HTTP:Transfer-Encoding} . [OR]
+    RewriteCond %{HTTP:Content-Encoding} .
+    RewriteCond %{REQUEST_METHOD} ^(POST|PUT|PATCH)$
+    RewriteRule ^ - [F,L]
+
+    RewriteCond %{REQUEST_METHOD} ^(POST|PUT|PATCH)$
+    RewriteCond %{HTTP:Content-Length} !^[0-9]+$
+    RewriteRule ^ - [F,L]
+
+    # Hanya GET/POST/HEAD yang dipakai aplikasi.
+    RewriteCond %{REQUEST_METHOD} !^(GET|POST|HEAD)$
+    RewriteRule ^ - [F,L]
+</IfModule>
+
+# Badan permintaan terbesar yang sah di aplikasi ini < 4 KB; 64 KB sudah longgar.
+LimitRequestBody 65536
+
+# Pengaturan PHP per folder (hanya berlaku bila PHP berjalan sebagai modul Apache,
+# yaitu mode paling berisiko menurut advisori PHP2Shell).
+# file_uploads tidak bisa diatur dari sini (PHP_INI_SYSTEM); upload sudah mustahil
+# karena multipart/form-data ditolak Apache di atas, sebelum sampai ke PHP.
+<IfModule php7_module>
+    php_flag  session.upload_progress.enabled Off
+    php_value post_max_size 64K
+    php_value max_input_vars 100
+    php_value max_input_nesting_level 4
+    # Advisori: memory_limit=-1 mencegah kondisi kehabisan memori yang menjadi
+    # pemicu CVE-2026-109618. Besarnya kiriman sudah dibatasi LimitRequestBody.
+    php_value memory_limit -1
+</IfModule>
+<IfModule php_module>
+    php_flag  session.upload_progress.enabled Off
+    php_value post_max_size 64K
+    php_value max_input_vars 100
+    php_value max_input_nesting_level 4
+    php_value memory_limit -1
+</IfModule>
+
+# ---------------------------------------------------------------
+# Header keamanan
+# ---------------------------------------------------------------
+<IfModule mod_headers.c>
+    # Dua-duanya: mod_php memasang X-Powered-By di tabel header biasa, bukan "always".
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+    Header always set X-Frame-Options "DENY"
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set Referrer-Policy "same-origin"
+    Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com data:; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'"
+</IfModule>

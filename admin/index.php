@@ -31,7 +31,24 @@ $activeMenu = 'dashboard';
 require dirname(__DIR__) . '/includes/header.php';
 $semua = (int) $total['semua'];
 $hadir = (int) $total['hadir'];
+// Pemeriksaan server untuk admin: dibaca dari permintaan web ini, bukan CLI,
+// karena php.ini, konfigurasi Apache, dan .htaccess bisa saling menimpa.
+$progresUpload = filter_var(ini_get('session.upload_progress.enabled'), FILTER_VALIDATE_BOOLEAN);
 ?>
+
+<?php if (is_admin() && (php_rentan_php2shell() || $progresUpload)): ?>
+    <div class="alert alert-danger">
+        <strong><i class="fas fa-triangle-exclamation"></i> Server: PHP <?= h(PHP_VERSION) ?></strong>
+        <?php if (php_rentan_php2shell()): ?>
+            rentan <strong>PHP2Shell</strong> (CVE-2026-109618 / CVE-2026-109619) — eksekusi kode jarak jauh tanpa login.
+            Mitigasi di folder aplikasi ini sudah aktif, tetapi satu-satunya perbaikan tuntas adalah
+            memperbarui PHP ke 8.2.35 / 8.3.36 / 8.4.27 / 8.5.12 atau lebih baru.
+        <?php endif; ?>
+        <?php if ($progresUpload): ?>
+            <br><code>session.upload_progress.enabled</code> masih <strong>On</strong>: matikan di php.ini lalu restart Apache.
+        <?php endif; ?>
+    </div>
+<?php endif; ?>
 
 <div class="kotak-angka">
     <div class="kotak aksen">

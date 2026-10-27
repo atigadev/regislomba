@@ -13,22 +13,53 @@ if (!in_array($fStatus, ['', 'terdaftar', 'hadir'], true)) { $fStatus = 'terdaft
 if (!isset(JENIS_LOMBA[$fJenis])) { $fJenis = ''; }
 if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fTanggal)) { $fTanggal = ''; }
 
+$fCari = mb_substr(trim((string) ($_GET['q'] ?? '')), 0, 100);
+
 $where = [];
 $param = [];
 if ($fStatus !== '') { $where[] = 'p.status = ?'; $param[] = $fStatus; }
 if ($fJenis !== '') { $where[] = 'p.jenis_lomba = ?'; $param[] = $fJenis; }
 if ($fTanggal !== '') { $where[] = 'DATE(p.dibuat_pada) = ?'; $param[] = $fTanggal; }
+if ($fCari !== '') {
+    // Pencarian di server, bukan di browser: halaman hanya membawa satu
+    // halaman hasil, jadi event ribuan peserta tetap ringan dibuka di HP.
+    $suka = '%' . addcslashes($fCari, '%_\\') . '%';
+    $kond = 'p.kode LIKE ? OR p.nama LIKE ? OR p.email LIKE ? OR p.domisili LIKE ?';
+    array_push($param, $suka, $suka, $suka, $suka);
+    // Nomor WA dicari dalam bentuk yang disimpan (62...), apa pun cara mengetiknya.
+    $angka = preg_replace('/\D+/', '', $fCari);
+    if (strlen($angka) >= 4) {
+        $kond .= ' OR p.no_wa LIKE ?';
+        $param[] = '%' . (strpos($angka, '0') === 0 ? substr($angka, 1) : $angka) . '%';
+    }
+    $where[] = '(' . $kond . ')';
+}
+$sqlWhere = $where ? ' WHERE ' . implode(' AND ', $where) : '';
 
-$sql = 'SELECT p.*, s.nama AS sesi_nama, t.nama AS petugas_nama
+$st = db()->prepare('SELECT COUNT(*) FROM peserta p' . $sqlWhere);
+$st->execute($param);
+$jumlahHasil = (int) $st->fetchColumn();
+
+const PER_HALAMAN = 50;
+$jumlahHalaman = max(1, (int) ceil($jumlahHasil / PER_HALAMAN));
+$hal = min($jumlahHalaman, max(1, (int) ($_GET['hal'] ?? 1)));
+
+$st = db()->prepare('SELECT p.*, s.nama AS sesi_nama, t.nama AS petugas_nama
         FROM peserta p
         LEFT JOIN sesi s ON s.id = p.sesi_id
-        LEFT JOIN petugas t ON t.id = p.hadir_oleh'
-    . ($where ? ' WHERE ' . implode(' AND ', $where) : '')
-    . ' ORDER BY p.id DESC';
-$st = db()->prepare($sql);
+        LEFT JOIN petugas t ON t.id = p.hadir_oleh' . $sqlWhere . '
+        ORDER BY p.id DESC LIMIT ' . PER_HALAMAN . ' OFFSET ' . (($hal - 1) * PER_HALAMAN));
 $st->execute($param);
 $rows = $st->fetchAll();
 $totalSemua = (int) db()->query('SELECT COUNT(*) FROM peserta')->fetchColumn();
+$awal = $jumlahHasil ? ($hal - 1) * PER_HALAMAN + 1 : 0;
+$akhir = ($hal - 1) * PER_HALAMAN + count($rows);
+
+/** Alamat halaman ini dengan saringan yang sama, mengganti sebagian parameternya. */
+$urlHal = function ($ganti) use ($fStatus, $fJenis, $fTanggal, $fCari) {
+    $q = array_merge(['status' => $fStatus, 'jenis' => $fJenis, 'tanggal' => $fTanggal, 'q' => $fCari], $ganti);
+    return url('admin/peserta.php') . '?' . http_build_query(array_filter($q, function ($v, $k) { return $v !== '' || $k === 'status'; }, ARRAY_FILTER_USE_BOTH));
+};
 // Saringan yang aktif disebut dengan kata-kata: status "Belum hadir" adalah
 // bawaan halaman ini, jadi tanpa keterangan petugas mengira tidak ada saringan
 // padahal sebagian data tersembunyi.
@@ -36,9 +67,9 @@ $ketFilter = [];
 if ($fStatus !== '') { $ketFilter[] = $fStatus === 'hadir' ? 'sudah hadir' : 'belum hadir'; }
 if ($fJenis !== '') { $ketFilter[] = 'lomba ' . jenis_label($fJenis); }
 if ($fTanggal !== '') { $ketFilter[] = 'daftar ' . tgl_indo($fTanggal, false); }
+if ($fCari !== '') { $ketFilter[] = 'cocok dengan "' . $fCari . '"'; }
 
 $sesiAktif = sesi_semua(true);
-$sesiKini = sesi_pada_jam();
 
 $pageTitle = 'Cek Pendaftaran';
 $activeMenu = 'peserta';
@@ -54,7 +85,12 @@ require dirname(__DIR__) . '/includes/header.php';
         <p class="card-subtitle">Bawaan: hanya peserta yang belum hadir. Pilih Status "Semua status" untuk melihat yang sudah hadir juga.</p>
     </header>
     <div class="card-body">
-        <form method="get" class="baris-filter">
+        <form method="get" class="baris-filter" id="formSaring">
+            <div class="form-group kolom-cari">
+                <label for="fCari">Cari</label>
+                <input type="search" id="fCari" name="q" class="form-control cari-cepat" maxlength="100" value="<?= h($fCari) ?>"
+                    placeholder="Kode, nama, no. WA, email — atau scan QR di sini" autocomplete="off">
+            </div>
             <div class="form-group">
                 <label for="fStatus">Status</label>
                 <select id="fStatus" name="status" class="form-select">
@@ -89,10 +125,13 @@ require dirname(__DIR__) . '/includes/header.php';
         <h2 class="card-title">Data Pendaftar</h2>
         <p class="card-subtitle">
             <?php if ($ketFilter): ?>
-                Menampilkan <?= count($rows) ?> dari <?= $totalSemua ?> pendaftar — hanya yang <?= h(implode(', ', $ketFilter)) ?>.
+                <?= $jumlahHasil ?> dari <?= $totalSemua ?> pendaftar — hanya yang <?= h(implode(', ', $ketFilter)) ?>.
                 <a href="<?= url('admin/peserta.php?status=') ?>">Tampilkan semua</a>
             <?php else: ?>
-                Menampilkan semua <?= $totalSemua ?> pendaftar.
+                Semua <?= $totalSemua ?> pendaftar.
+            <?php endif; ?>
+            <?php if ($jumlahHalaman > 1): ?>
+                Baris <?= $awal ?>–<?= $akhir ?>, halaman <?= $hal ?> dari <?= $jumlahHalaman ?>.
             <?php endif; ?>
         </p>
     </header>
@@ -114,6 +153,11 @@ require dirname(__DIR__) . '/includes/header.php';
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (!$rows): ?>
+                        <tr><td colspan="10" class="text-center text-muted">
+                            <?= $fCari !== '' ? 'Tidak ada yang cocok dengan "' . h($fCari) . '". Periksa ejaan, atau pilih Status "Semua status" untuk mencari juga yang sudah hadir.' : 'Tidak ada pendaftar pada saringan ini.' ?>
+                        </td></tr>
+                    <?php endif; ?>
                     <?php foreach ($rows as $p):
                         $data = [
                             'id' => (int) $p['id'], 'kode' => $p['kode'], 'nama' => $p['nama'], 'umur' => (int) $p['umur'],
@@ -122,14 +166,14 @@ require dirname(__DIR__) . '/includes/header.php';
                         ];
                     ?>
                         <tr data-id="<?= (int) $p['id'] ?>">
-                            <td data-search="<?= h($p['kode'] . ' ' . $p['no_wa']) ?>"><code><?= h($p['kode']) ?></code></td>
+                            <td><code><?= h($p['kode']) ?></code></td>
                             <td><strong><?= h($p['nama']) ?></strong></td>
                             <td class="text-end"><?= (int) $p['umur'] ?></td>
                             <td><a href="https://wa.me/<?= h($p['no_wa']) ?>" target="_blank" rel="noopener"><?= h(format_wa($p['no_wa'])) ?></a></td>
                             <td><?= h($p['email']) ?></td>
                             <td><?= h($p['domisili']) ?></td>
                             <td><span class="badge badge-<?= h($p['jenis_lomba']) ?>"><?= h(jenis_label($p['jenis_lomba'])) ?></span></td>
-                            <td data-order="<?= h($p['dibuat_pada']) ?>"><small><?= h(tgl_indo($p['dibuat_pada'])) ?></small></td>
+                            <td><small><?= h(tgl_indo($p['dibuat_pada'])) ?></small></td>
                             <td class="sel-status">
                                 <?php if ($p['status'] === 'hadir'): ?>
                                     <span class="badge badge-hadir">Hadir</span>
@@ -160,6 +204,28 @@ require dirname(__DIR__) . '/includes/header.php';
                 </tbody>
             </table>
         </div>
+        <?php if ($jumlahHalaman > 1):
+            $dari = max(1, $hal - 2);
+            $sampai = min($jumlahHalaman, $hal + 2);
+        ?>
+            <nav class="mt-3" aria-label="Halaman data pendaftar">
+                <ul class="pagination pagination-sm flex-wrap justify-content-end mb-0">
+                    <li class="page-item<?= $hal <= 1 ? ' disabled' : '' ?>"><a class="page-link" href="<?= h($urlHal(['hal' => $hal - 1])) ?>" aria-label="Sebelumnya">‹</a></li>
+                    <?php if ($dari > 1): ?>
+                        <li class="page-item"><a class="page-link" href="<?= h($urlHal(['hal' => 1])) ?>">1</a></li>
+                        <?php if ($dari > 2): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                    <?php endif; ?>
+                    <?php for ($i = $dari; $i <= $sampai; $i++): ?>
+                        <li class="page-item<?= $i === $hal ? ' active' : '' ?>"><a class="page-link" href="<?= h($urlHal(['hal' => $i])) ?>"<?= $i === $hal ? ' aria-current="page"' : '' ?>><?= $i ?></a></li>
+                    <?php endfor; ?>
+                    <?php if ($sampai < $jumlahHalaman): ?>
+                        <?php if ($sampai < $jumlahHalaman - 1): ?><li class="page-item disabled"><span class="page-link">…</span></li><?php endif; ?>
+                        <li class="page-item"><a class="page-link" href="<?= h($urlHal(['hal' => $jumlahHalaman])) ?>"><?= $jumlahHalaman ?></a></li>
+                    <?php endif; ?>
+                    <li class="page-item<?= $hal >= $jumlahHalaman ? ' disabled' : '' ?>"><a class="page-link" href="<?= h($urlHal(['hal' => $hal + 1])) ?>" aria-label="Berikutnya">›</a></li>
+                </ul>
+            </nav>
+        <?php endif; ?>
     </div>
 </section>
 
@@ -178,15 +244,16 @@ require dirname(__DIR__) . '/includes/header.php';
                 </table>
                 <div class="form-group mb-0">
                     <label for="pilihSesi">Sesi <span class="wajib">*</span></label>
+                    <!-- Sesi dipilih ulang setiap kali modal dibuka (lihat pilihSesiKini):
+                         halaman ini bisa terbuka berjam-jam, jadi jam saat halaman
+                         dimuat bukan jam saat petugas menekan Hadir. -->
                     <select id="pilihSesi" class="form-select">
-                        <?php if (!$sesiAktif): ?>
-                            <option value="">Belum ada sesi aktif</option>
-                        <?php endif; ?>
+                        <option value=""><?= $sesiAktif ? '— Pilih sesi —' : 'Belum ada sesi aktif' ?></option>
                         <?php foreach ($sesiAktif as $s): ?>
-                            <option value="<?= (int) $s['id'] ?>" <?= $sesiKini && (int) $sesiKini['id'] === (int) $s['id'] ? 'selected' : '' ?>><?= h(sesi_label($s)) ?></option>
+                            <option value="<?= (int) $s['id'] ?>" data-mulai="<?= h(substr($s['jam_mulai'], 0, 5)) ?>" data-selesai="<?= h(substr($s['jam_selesai'], 0, 5)) ?>"><?= h(sesi_label($s)) ?></option>
                         <?php endforeach; ?>
                     </select>
-                    <span class="help-block">Dipilih otomatis sesuai jam sekarang. Ganti bila peserta masuk sesi lain.</span>
+                    <span class="help-block" id="bantuSesi"></span>
                 </div>
             </div>
             <div class="modal-footer">
@@ -321,35 +388,16 @@ ob_start();
 </script>
 <script>
 (function () {
-    var tabel = new DataTable('#tabelPeserta', {
-        order: [],
-        pageLength: 25,
-        columnDefs: [{ targets: -1, orderable: false, searchable: false }],
-        language: {
-            search: 'Cari:',
-            searchPlaceholder: 'Kode, nama, atau no. WA',
-            lengthMenu: '_MENU_ per halaman',
-            info: '_START_–_END_ dari _TOTAL_ baris',
-            infoEmpty: 'Tidak ada baris',
-            infoFiltered: '(disaring dari _MAX_)',
-            zeroRecords: 'Tidak ditemukan. Periksa ejaan, atau pilih "Semua data" untuk mencari di seluruh status.',
-            emptyTable: 'Tidak ada pendaftar pada saringan ini.',
-            paginate: { first: '«', last: '»', next: '›', previous: '‹' }
-        }
-    });
     // Kotak cari langsung siap diketik begitu halaman terbuka.
-    var cari = document.querySelector('#tabelPeserta_wrapper .dt-search input, .dt-search input');
-    if (cari) {
-        cari.classList.add('cari-cepat');
-        if (!/[?&]scan=1/.test(window.location.search)) { cari.focus(); }
-        // Pemindai USB/Bluetooth mengetik isi QR lalu menekan Enter di kotak cari:
-        // tautan kartu atau kode yang lengkap langsung membuka halaman cek peserta.
-        cari.addEventListener('keydown', function (e) {
-            if (e.key !== 'Enter') { return; }
-            var tujuan = window.tujuanScan(cari.value);
-            if (tujuan) { e.preventDefault(); window.location.href = tujuan; }
-        });
-    }
+    var cari = document.getElementById('fCari');
+    if (!/[?&]scan=1/.test(window.location.search)) { cari.focus(); cari.select(); }
+    // Pemindai USB/Bluetooth mengetik isi QR lalu menekan Enter di kotak cari:
+    // tautan kartu atau kode yang lengkap langsung membuka halaman cek peserta;
+    // selain itu Enter menjalankan pencarian biasa.
+    document.getElementById('formSaring').addEventListener('submit', function (e) {
+        var tujuan = window.tujuanScan(cari.value);
+        if (tujuan) { e.preventDefault(); window.location.href = tujuan; }
+    });
 
     var modalEl = document.getElementById('modalHadir');
     var modal = new bootstrap.Modal(modalEl);
@@ -373,6 +421,28 @@ ob_start();
         }).then(function (r) { return r.json(); });
     }
 
+    // Jam server saat halaman dimuat + waktu yang sudah berlalu sejak itu. Jam HP/
+    // laptop petugas tidak dipakai: sering salah setel, dan sesi harus mengikuti server.
+    var DETIK_SERVER = <?= (int) date('G') * 3600 + (int) date('i') * 60 + (int) date('s') ?>;
+    var dimuat = Date.now();
+    function pilihSesiKini() {
+        var d = (DETIK_SERVER + Math.floor((Date.now() - dimuat) / 1000)) % 86400;
+        var jam = ('0' + Math.floor(d / 3600)).slice(-2) + ':' + ('0' + Math.floor(d % 3600 / 60)).slice(-2);
+        var pilih = document.getElementById('pilihSesi');
+        var bantu = document.getElementById('bantuSesi');
+        pilih.value = '';
+        Array.prototype.forEach.call(pilih.options, function (o) {
+            if (o.dataset.mulai && jam >= o.dataset.mulai && jam < o.dataset.selesai) { pilih.value = o.value; }
+        });
+        if (pilih.value) {
+            bantu.className = 'help-block';
+            bantu.textContent = 'Dipilih otomatis sesuai jam sekarang (' + jam + '). Ganti bila peserta masuk sesi lain.';
+        } else {
+            bantu.className = 'help-block text-warning';
+            bantu.textContent = 'Sekarang (' + jam + ') di luar jam sesi mana pun — pilih sesinya secara manual.';
+        }
+    }
+
     function baris(id) { return document.querySelector('#tabelPeserta tr[data-id="' + id + '"]'); }
 
     document.getElementById('tabelPeserta').addEventListener('click', function (e) {
@@ -393,6 +463,7 @@ ob_start();
                 '<tr><th>Lomba</th><td>' + esc(p.jenis) + '</td></tr>' +
                 '<tr><th>Mendaftar</th><td>' + esc(p.daftar) + '</td></tr>';
             tombolSimpan.disabled = false;
+            pilihSesiKini();
             modal.show();
             return;
         }
@@ -412,7 +483,7 @@ ob_start();
             t.disabled = true;
             kirim('hapus', { id: t.dataset.id }).then(function (res) {
                 if (!res.ok) { alert(res.pesan); t.disabled = false; return; }
-                tabel.row(baris(t.dataset.id)).remove().draw(false);
+                baris(t.dataset.id).remove();
             }).catch(function () { alert('Jaringan terputus. Coba lagi.'); t.disabled = false; });
         }
     });
@@ -421,7 +492,7 @@ ob_start();
         if (!pesertaAktif) { return; }
         var sesi = document.getElementById('pilihSesi').value;
         if (!sesi) {
-            document.getElementById('pesanModal').innerHTML = '<div class="alert alert-danger">Belum ada sesi aktif. Minta administrator menambahkan sesi di menu Sesi.</div>';
+            document.getElementById('pesanModal').innerHTML = '<div class="alert alert-danger">Pilih sesi dulu. Bila daftar sesi kosong, minta administrator menambahkannya di menu Sesi.</div>';
             return;
         }
         tombolSimpan.disabled = true;

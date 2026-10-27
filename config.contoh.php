@@ -21,6 +21,10 @@ define('KODE_AWALAN', 'LMB-');
 // Formulir publik bisa ditutup tanpa mematikan aplikasi petugas.
 define('PENDAFTARAN_DIBUKA', true);
 
+// Batas pendaftaran per IP per 10 menit (penangkal banjir kiriman). Naikkan bila
+// ratusan peserta mendaftar lewat SATU WiFi acara (semua keluar dengan IP yang sama).
+// define('DAFTAR_BATAS_IP', 150);
+
 define('APP_TIMEZONE', 'Asia/Jakarta');
 
 // Alamat aplikasi relatif terhadap root web, tanpa garis miring di akhir.

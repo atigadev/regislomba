@@ -13,22 +13,39 @@ if (petugas_login()) {
 
 $error = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $gagal = $_SESSION['login_gagal'] ?? ['n' => 0, 't' => 0];
-    if ($gagal['n'] >= 5 && time() - $gagal['t'] < 60) {
-        $error = 'Terlalu banyak percobaan. Tunggu 1 menit lalu coba lagi.';
+    $username = strtolower(trim((string) ($_POST['username'] ?? '')));
+    $password = (string) ($_POST['password'] ?? '');
+    // Dua penghitung di database, 15 menit: per IP+username (5x) menghentikan
+    // penebakan satu akun, per IP (20x) menghentikan penebakan banyak akun.
+    // Disimpan di database, bukan di sesi: membuang cookie tidak mereset hitungan.
+    $kunciAkun = 'login:' . ip_klien() . ':' . substr($username, 0, 50);
+    $kunciIp = 'login-ip:' . ip_klien();
+
+    if (pembatas_penuh($kunciAkun, 5, 900) || pembatas_penuh($kunciIp, 20, 900)) {
+        $error = 'Terlalu banyak percobaan login gagal. Tunggu 15 menit lalu coba lagi.';
     } elseif (!csrf_valid()) {
         $error = 'Halaman kedaluwarsa. Silakan coba lagi.';
     } else {
         $st = db()->prepare('SELECT * FROM petugas WHERE username = ? AND aktif = 1');
-        $st->execute([trim((string) ($_POST['username'] ?? ''))]);
+        $st->execute([$username]);
         $p = $st->fetch();
-        if ($p && password_verify((string) ($_POST['password'] ?? ''), $p['password'])) {
+        // password_verify tetap dijalankan walau akun tidak ada, supaya lamanya
+        // jawaban tidak membocorkan username mana yang terdaftar.
+        $cocok = password_verify($password, $p ? $p['password'] : password_hash(random_bytes(8), PASSWORD_DEFAULT));
+        if ($p && $cocok) {
             session_regenerate_id(true);
-            unset($_SESSION['login_gagal']);
+            pembatas_hapus($kunciAkun);
             $_SESSION['petugas'] = ['id' => $p['id'], 'nama' => $p['nama'], 'username' => $p['username'], 'peran' => $p['peran']];
+            $_SESSION['aktif_terakhir'] = time();
+            if (password_lemah($password)) {
+                $_SESSION['wajib_ganti_password'] = true;
+                flash_set('error', 'Password akun ini terlalu lemah atau masih bawaan. Ganti dulu sebelum melanjutkan.');
+                redirect('admin/password.php');
+            }
             redirect($kembali);
         }
-        $_SESSION['login_gagal'] = ['n' => ($gagal['n'] >= 5 ? 0 : $gagal['n']) + 1, 't' => time()];
+        pembatas_catat($kunciAkun);
+        pembatas_catat($kunciIp);
         $error = 'Username atau password salah.';
     }
 }
@@ -40,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Login Petugas - <?= h(APP_NAME) ?></title>
-<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800" rel="stylesheet" type="text/css">
+<link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700,800&display=swap" rel="stylesheet" type="text/css">
 <link rel="stylesheet" href="<?= url('assets/porto/vendor/bootstrap/css/bootstrap.css') ?>">
 <link rel="stylesheet" href="<?= url('assets/porto/vendor/font-awesome/css/all.min.css') ?>">
 <link rel="stylesheet" href="<?= url('assets/porto/css/theme.css') ?>">

@@ -65,8 +65,8 @@ require dirname(__DIR__) . '/includes/header.php';
 <script src="<?= asset('assets/vendor/qrcode.min.js') ?>"></script>
 <script>
 (function () {
-    var tautan = <?= json_encode($tautan) ?>;
-    var acara = <?= json_encode(ACARA_NAMA) ?>;
+    var tautan = <?= js($tautan) ?>;
+    var acara = <?= js(ACARA_NAMA) ?>;
     QRCode.toCanvas(document.getElementById('qrFormulir'), tautan, { width: 300, margin: 2, errorCorrectionLevel: 'M' });
 
     document.getElementById('tombolUnduh').addEventListener('click', function () {

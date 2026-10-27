@@ -27,6 +27,16 @@
     });
 })();
 </script>
+<!-- Logout lewat POST bertoken (lihat admin/logout.php). -->
+<form method="post" action="<?= url('admin/logout.php') ?>" id="formLogout" hidden><?= csrf_field() ?></form>
+<script>
+document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-logout]');
+    if (!a) { return; }
+    e.preventDefault();
+    document.getElementById('formLogout').submit();
+});
+</script>
 <?php if (!empty($skripHalaman)) { echo $skripHalaman; } ?>
 </body>
 </html>

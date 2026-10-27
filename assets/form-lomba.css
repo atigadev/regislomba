@@ -130,6 +130,14 @@
     border-color: var(--fp-aksen);
 }
 
+.fl-jebakan {
+    position: absolute;
+    left: -10000px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
 .fl-tautan {
     color: #aab3ea;
     font-size: 13.5px;

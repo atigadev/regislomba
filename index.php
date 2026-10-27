@@ -22,29 +22,48 @@ if (PENDAFTARAN_DIBUKA && $_SERVER['REQUEST_METHOD'] === 'POST') {
     $umur = filter_var($isi['umur'], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 120]]);
 
     $galat = [];
-    if (!csrf_valid()) {
+    // Penangkal bot & banjir kiriman. Batas per IP sengaja longgar: di lokasi
+    // acara ratusan HP peserta bisa keluar lewat SATU IP WiFi yang sama.
+    $kunciIp = 'daftar:' . ip_klien();
+    $batasIp = defined('DAFTAR_BATAS_IP') ? (int) DAFTAR_BATAS_IP : 150;
+    $mulai = (int) ($_SESSION['form_mulai'] ?? 0);
+    if (pembatas_penuh($kunciIp, $batasIp, 600)) {
+        $galat[] = 'Terlalu banyak pendaftaran dari jaringan ini dalam 10 menit terakhir. Coba lagi beberapa menit lagi, atau hubungi panitia.';
+    } elseif (!csrf_valid()) {
         $galat[] = 'Halaman sudah terlalu lama dibuka. Silakan kirim ulang formulirnya.';
+    } elseif (trim((string) ($_POST['situs'] ?? '')) !== '' || !$mulai || time() - $mulai < 3) {
+        // Isian "situs" tersembunyi dari manusia; yang mengisinya, atau yang
+        // mengirim kurang dari 3 detik setelah formulir tampil, hampir pasti bot.
+        $galat[] = 'Kiriman tidak dapat diproses. Muat ulang halaman lalu isi formulirnya kembali.';
     }
-    if ($isi['nama'] === '' || mb_strlen($isi['nama']) > 100) {
-        $galat[] = 'Nama wajib diisi (maksimal 100 karakter).';
-    }
-    if ($umur === false) {
-        $galat[] = 'Umur wajib diisi dengan angka 1–120.';
-    }
-    if (strlen($wa) < 10 || strlen($wa) > 15) {
-        $galat[] = 'No. WhatsApp tidak valid. Contoh: 081234567890.';
-    }
-    if (!filter_var($isi['email'], FILTER_VALIDATE_EMAIL) || strlen($isi['email']) > 150) {
-        $galat[] = 'Email tidak valid. Contoh: nama@email.com.';
-    }
-    if ($isi['domisili'] === '' || mb_strlen($isi['domisili']) > 100) {
-        $galat[] = 'Domisili wajib diisi (kota/kabupaten).';
-    }
-    if (!isset(JENIS_LOMBA[$isi['jenis_lomba']])) {
-        $galat[] = 'Pilih jenis lomba: Challenge atau Free Play.';
-    }
+    pembatas_catat($kunciIp);
 
     if (!$galat) {
+        if ($isi['nama'] === '' || mb_strlen($isi['nama']) > 100) {
+            $galat[] = 'Nama wajib diisi (maksimal 100 karakter).';
+        }
+        if ($umur === false) {
+            $galat[] = 'Umur wajib diisi dengan angka 1–120.';
+        }
+        if (strlen($wa) < 10 || strlen($wa) > 15) {
+            $galat[] = 'No. WhatsApp tidak valid. Contoh: 081234567890.';
+        }
+        if (!filter_var($isi['email'], FILTER_VALIDATE_EMAIL) || strlen($isi['email']) > 150) {
+            $galat[] = 'Email tidak valid. Contoh: nama@email.com.';
+        }
+        if ($isi['domisili'] === '' || mb_strlen($isi['domisili']) > 100) {
+            $galat[] = 'Domisili wajib diisi (kota/kabupaten).';
+        }
+        if (!isset(JENIS_LOMBA[$isi['jenis_lomba']])) {
+            $galat[] = 'Pilih jenis lomba: Challenge atau Free Play.';
+        }
+    }
+
+    // Kunci per (WA, lomba) selama cek-ganda + simpan: dua kiriman serentak
+    // (dobel ketuk, sinyal lemot) tidak bisa sama-sama lolos cek lalu tersimpan dua kali.
+    $kunciGanda = 'regis-daftar-' . md5($wa . '|' . $isi['jenis_lomba']);
+    if (!$galat) {
+        db()->query('SELECT GET_LOCK(' . db()->quote($kunciGanda) . ', 5)');
         // Satu nomor WA tidak bisa punya dua pendaftaran yang sama-sama belum
         // hadir untuk lomba yang sama - yang kedua hampir selalu kiriman ganda.
         $st = db()->prepare("SELECT kode FROM peserta WHERE no_wa = ? AND jenis_lomba = ? AND status = 'terdaftar' LIMIT 1");
@@ -57,6 +76,7 @@ if (PENDAFTARAN_DIBUKA && $_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($galat) {
+        db()->query('SELECT RELEASE_LOCK(' . db()->quote($kunciGanda) . ')');
         $pesan = implode(' ', $galat);
     } else {
         $pdo = db();
@@ -67,12 +87,15 @@ if (PENDAFTARAN_DIBUKA && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $id = (int) $pdo->lastInsertId();
         $pdo->prepare('UPDATE peserta SET kode = ? WHERE id = ?')->execute([kode_peserta($id), $id]);
         $pdo->commit();
+        $pdo->query('SELECT RELEASE_LOCK(' . $pdo->quote($kunciGanda) . ')');
 
         // Post/Redirect/Get ke kartu peserta: muat ulang tidak mengirim formulir
         // dua kali, dan alamatnya bisa disimpan untuk membuka QR-nya lagi nanti.
         redirect('kartu.php?t=' . $token . '&baru=1');
     }
 }
+// Waktu formulir tampil, untuk menolak kiriman yang terlalu cepat (bot).
+$_SESSION['form_mulai'] = time();
 ?>
 <!doctype html>
 <html lang="id">
@@ -82,7 +105,7 @@ if (PENDAFTARAN_DIBUKA && $_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#1b1e28">
     <title>Pendaftaran <?= h(ACARA_NAMA) ?></title>
-    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="<?= asset('assets/form-publik.css') ?>">
     <link rel="stylesheet" href="<?= asset('assets/form-lomba.css') ?>">
 </head>
@@ -113,6 +136,11 @@ if (PENDAFTARAN_DIBUKA && $_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 <form method="post" class="fp-form" novalidate>
                     <?= csrf_field() ?>
+                    <!-- Jebakan bot: tidak terlihat & tidak bisa difokus manusia. -->
+                    <div class="fl-jebakan" aria-hidden="true">
+                        <label for="f_situs">Situs web</label>
+                        <input type="text" id="f_situs" name="situs" tabindex="-1" autocomplete="off">
+                    </div>
                     <div class="fp-grup">
                         <label for="f_nama">Nama Lengkap <span class="fp-wajib">*</span></label>
                         <input type="text" id="f_nama" name="nama" maxlength="100" required autocomplete="name"

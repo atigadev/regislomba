@@ -8,3 +8,5 @@ backup-*.sql
 .idea/
 Thumbs.db
 .DS_Store
+# Penanda migrasi skema (per server)
+includes/.skema-*

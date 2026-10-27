@@ -26,10 +26,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         flash_set('error', 'Nama wajib diisi; username 3–50 karakter (huruf, angka, titik, garis bawah, strip).');
     } elseif ((int) $st->fetchColumn() > 0) {
         flash_set('error', 'Username "' . $username . '" sudah dipakai. Pilih yang lain.');
-    } elseif (!$id && strlen($password) < 6) {
-        flash_set('error', 'Password akun baru minimal 6 karakter.');
-    } elseif ($id && $password !== '' && strlen($password) < 6) {
-        flash_set('error', 'Password minimal 6 karakter, atau kosongkan bila tidak diganti.');
+    } elseif (!$id && password_lemah($password)) {
+        flash_set('error', 'Password akun baru minimal 8 karakter dan bukan password umum.');
+    } elseif ($id && $password !== '' && password_lemah($password)) {
+        flash_set('error', 'Password minimal 8 karakter dan bukan password umum, atau kosongkan bila tidak diganti.');
     } elseif ($id === (int) $akun['id'] && ($peran !== 'admin' || !$aktif)) {
         flash_set('error', 'Anda tidak bisa menurunkan peran atau menonaktifkan akun sendiri.');
     } else {
@@ -109,7 +109,7 @@ require dirname(__DIR__) . '/includes/header.php';
                 <div class="form-group">
                     <label for="akunPassword">Password <span class="wajib" id="tandaWajibPass">*</span></label>
                     <input type="password" id="akunPassword" name="password" class="form-control" autocomplete="new-password">
-                    <span class="help-block" id="bantuPass">Minimal 6 karakter.</span>
+                    <span class="help-block" id="bantuPass">Minimal 8 karakter, bukan password umum.</span>
                 </div>
                 <div class="form-group">
                     <label for="akunPeran">Peran</label>
@@ -144,7 +144,7 @@ require dirname(__DIR__) . '/includes/header.php';
         document.getElementById('akunPeran').value = a ? a.peran : 'petugas';
         document.getElementById('akunAktif').checked = a ? !!a.aktif : true;
         document.getElementById('tandaWajibPass').style.display = a ? 'none' : '';
-        document.getElementById('bantuPass').textContent = a ? 'Kosongkan bila tidak diganti.' : 'Minimal 6 karakter.';
+        document.getElementById('bantuPass').textContent = a ? 'Kosongkan bila tidak diganti.' : 'Minimal 8 karakter, bukan password umum.';
         modal.show();
     }
     document.getElementById('tombolTambah').addEventListener('click', function () { isi(null); });

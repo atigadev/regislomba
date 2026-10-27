@@ -1,7 +1,8 @@
 -- =========================================================
 --  Registrasi Acara Lomba - skema database
 --  Import sekali:  mysql -uroot < database.sql
---  Akun awal: admin / admin123  (SEGERA ganti lewat menu Ganti Password)
+--  Akun awal: admin / admin123 - wajib diganti saat login pertama.
+--  Lebih disarankan: pasang lewat setup.php.
 -- =========================================================
 
 CREATE DATABASE IF NOT EXISTS regis_acara CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -51,6 +52,14 @@ CREATE TABLE IF NOT EXISTS peserta (
     INDEX idx_dibuat_pada (dibuat_pada),
     CONSTRAINT fk_peserta_sesi FOREIGN KEY (sesi_id) REFERENCES sesi(id) ON DELETE SET NULL,
     CONSTRAINT fk_peserta_petugas FOREIGN KEY (hadir_oleh) REFERENCES petugas(id) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
+-- Pembatas percobaan login & kiriman formulir (per IP).
+CREATE TABLE IF NOT EXISTS pembatas (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    kunci VARCHAR(120) NOT NULL,
+    waktu DATETIME NOT NULL,
+    INDEX idx_kunci_waktu (kunci, waktu)
 ) ENGINE=InnoDB;
 
 INSERT IGNORE INTO petugas (id, nama, username, password, peran) VALUES

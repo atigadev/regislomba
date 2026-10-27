@@ -43,11 +43,13 @@ if (($_GET['unduh'] ?? '') === 'csv') {
     fwrite($out, "\xEF\xBB\xBF"); // BOM supaya Excel membaca UTF-8
     fputcsv($out, ['No', 'Tanggal Hadir', 'Jam', 'Sesi', 'Kode', 'Nama', 'Umur', 'No. WA', 'Email', 'Domisili', 'Jenis Lomba', 'Tanggal Daftar', 'Petugas'], ';');
     foreach ($rows as $i => $p) {
-        fputcsv($out, [
+        // Setiap sel lewat csv_aman(): isian peserta seperti "=HYPERLINK(...)"
+        // tidak boleh menjadi rumus saat CSV dibuka di Excel.
+        fputcsv($out, array_map('csv_aman', [
             $i + 1, $p['tgl'], substr($p['hadir_pada'], 11, 5), $p['sesi_nama'] ?: 'Tanpa sesi', $p['kode'], $p['nama'], $p['umur'],
             // Diawali petik supaya Excel tidak mengubah nomor jadi notasi ilmiah.
             "'" . format_wa($p['no_wa']), $p['email'], $p['domisili'], jenis_label($p['jenis_lomba']), $p['dibuat_pada'], $p['petugas_nama'],
-        ], ';');
+        ]), ';');
     }
     fclose($out);
     exit;
